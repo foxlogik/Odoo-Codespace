@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="matrix_view.MatrixRenderer">
+        <t t-call="{{ props.buttonTemplate }}"/>
+        <div t-if="model.hasData() and model.metaData.activeMeasures.length" 
+            class="o_matrix mx-3 table-responsive">
+            <table class="table table-sm table-bordered">
+                <!-- Column Group Headers -->
+                <thead>
+                    <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
+                        <!-- Empty cells for row fields -->
+                        <t t-if="headerRow_index == 0">
+                            <th t-att-colspan="model.metaData.rowGroupBys.length" 
+                                t-att-rowspan="table.headers.length"
+                                class="">
+                            </th>
+                        </t>
+                        
+                        <!-- Column group headers -->
+                        <t t-foreach="headerRow" t-as="cell" t-key="'header_row_' + cell_index">
+                            <th t-att-colspan="cell.width" 
+                                t-att-rowspan="cell.height"
+                                class="text-center"
+                                t-att-class="{
+                                    'cursor-pointer': cell.isLeaf !== undefined,
+                                    'bg-light': cell.isLeaf
+                                }"
+                                t-on-click.prevent="() => cell.isLeaf !== undefined &amp;&amp; this.onHeaderClick(cell, 'col')">
+                                <span t-esc="cell.title"/>
+                            </th>
+                        </t>
+                    </tr>
+                    
+                    <!-- Row Field Headers -->
+                    <tr>
+                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
+                            <th class="text-center">
+                                <span t-esc="model.metaData.fields[rowField.split(':')[0]].string"/>
+                            </th>
+                        </t>
+                        
+                        <!-- Measure headers for each column group -->
+                        <t t-foreach="table.headers[table.headers.length - 1]" t-as="colGroup" t-key="'measure_' + colGroup_index">
+                            <t t-foreach="model.metaData.activeMeasures" t-as="measure" t-key="measure">
+                                <th class="text-center">
+                                    <span t-esc="model.metaData.measures[measure].string"/>
+                                </th>
+                            </t>
+                        </t>
+                    </tr>
+                </thead>
+                
+                <!-- Data Rows -->
+                <tbody>
+                    <tr t-foreach="table.rows" t-as="row" t-key="'row_' + row_index">
+                        <!-- Row fields as separate columns -->
+                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
+                            <td class="text-left">
+                                <span t-esc="row.data[rowField.split(':')[0]]?.label"/>
+                            </td>
+                        </t>
+                        
+                        <!-- Measurement values -->
+                        <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
+                            <td class="text-end"
+                                t-att-class="{
+                                    'cursor-pointer': cell.value !== undefined,
+                                    'font-weight-bold': cell.isBold
+                                }"
+                                t-on-click="() => this.onOpenView(cell)">
+                                <t t-if="cell.value !== undefined">
+                                    <t t-if="cell.originIndexes.length > 1">
+                                        <span t-att-class="{
+                                            'text-success': cell.value &gt; 0,
+                                            'text-danger': cell.value &lt; 0
+                                        }" t-esc="getFormattedVariation(cell)"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-esc="getFormattedValue(cell)"/>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <span t-att-style="'text-align:center'" t-esc="'-'"/>
+                                </t>
+                            </td>
+                        </t>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <t t-name="matrix_view.MatrixHeader">
+        <th
+            class="bg-view text-nowrap cursor-pointer fw-normal user-select-none"
+            t-att-colspan="isXAxis ? cell.width : undefined"
+            t-att-rowspan="isXAxis ? cell.height : undefined"
+            t-att-class="{
+                o_matrix_header_cell_closed: cell.isLeaf,
+                o_matrix_header_cell_opened: !cell.isLeaf,
+                'border-top': isInHead,                
+            }"
+            t-attf-style="{{
+                isXAxis
+                    ? undefined
+                    : l10n.direction === 'ltr'
+                        ? 'padding-left: ' + getPadding(cell) + 'px;'
+                        : 'padding-right: ' + getPadding(cell) + 'px;'
+            }}"
+            t-att-data-tooltip="cell.label"
+            t-attf-data-tooltip-position="{{ l10n.direction === 'ltr' ? 'right' : 'left' }}"
+            t-on-click.prevent="() => this.onHeaderClick(cell, isXAxis ? 'col' : 'row')"
+        >
+            <t t-if="cell.isLeaf and !cell.isFolded">
+                <MatrixGroupByMenu
+                    toggler="'parent'"
+                    position="isXAxis ? 'bottom-start' : 'bottom-end'"
+                    cell="cell"
+                    customGroupBys="model.metaData.customGroupBys"
+                    onItemSelected="(payload) => this.onGroupBySelected(isXAxis ? 'col' : 'row', payload)"
+                    onAddCustomGroupBy="fieldName => this.onAddCustomGroupBy(isXAxis ? 'col' : 'row', cell.groupId, fieldName)"
+                />
+            </t>
+            <!--<i t-attf-class="fa fa-{{ cell.isLeaf ? 'plus-square' : 'minus-square-o' }} me-1"/>-->
+            <span t-esc="cell.title"/>
+        </th>
+    </t>
+
+    <t t-name="matrix_view.MatrixMeasure">
+        <th class="bg-view text-muted text-center text-nowrap fw-normal" t-att-colspan="cell.width" t-att-rowspan="cell.height" t-att-class="{
+                'o_matrix_origin_row cursor-pointer user-select-none': cell.originIndexes,
+                'o_matrix_measure_row cursor-pointer user-select-none': !cell.originIndexes,
+                o_matrix_sort_order_asc: cell.order === 'asc',
+                o_matrix_sort_order_desc: cell.order === 'desc',
+            }" t-on-click.prevent="() => this.onMeasureClick(cell)" t-on-mouseover="onMouseEnter" t-on-mouseout="onMouseLeave">
+            <t t-esc="cell.title"/>
+            <i t-if="cell.order === 'asc' || cell.order ==='desc'" t-attf-class="fa fa-caret-{{ cell.order === 'asc' ? 'up' : 'down' }} ms-1"/>
+        </th>
+    </t>
+
+</templates>

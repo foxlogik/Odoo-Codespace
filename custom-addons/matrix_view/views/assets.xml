@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/matrix_view/static/src/js/matrix_model.js"></script>
+            <script type="text/javascript" src="/matrix_view/static/src/js/matrix_renderer.js"></script>
+            <script type="text/javascript" src="/matrix_view/static/src/js/matrix_controller.js"></script>
+            <script type="text/javascript" src="/matrix_view/static/src/js/matrix_view.js"></script>
+            <link rel="stylesheet" href="/matrix_view/static/src/css/matrix_view.css"/>
+        </xpath>
+    </template>
+</odoo>

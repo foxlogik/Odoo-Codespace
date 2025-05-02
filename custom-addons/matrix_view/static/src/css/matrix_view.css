@@ -1,0 +1,42 @@
+.o_matrix_view {
+    overflow: auto;
+    height: 100%;
+}
+
+.o_matrix_table {
+    min-width: 100%;
+    table-layout: fixed;
+    margin-bottom: 0;
+}
+
+.o_matrix_table th {
+    vertical-align: middle;
+    text-align: center;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.o_matrix_table .o_matrix_subheaders th {
+    top: 38px; /* Height of the first header row */
+}
+
+.o_matrix_cell {
+    padding: 8px;
+    text-align: right;
+    min-width: 80px;
+}
+
+.o_matrix_cell.o_editable {
+    cursor: pointer;
+}
+
+.o_matrix_cell.o_editable:hover {
+    background-color: #f0f7ff;
+}
+
+.o_matrix_add_row, .o_matrix_remove_row {
+    padding: 3px 6px;
+    margin: 2px;
+}
