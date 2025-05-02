@@ -3,3 +3,6 @@
 	url = https://github.com/odoo/odoo.git
 	branch = 17.0
 	shallow = true
+[submodule "foxlogik_matrix_view"]
+	path = foxlogik_matrix_view
+	url = git@github.com:foxlogik/foxlogik_matrix_view.git
