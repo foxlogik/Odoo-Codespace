@@ -47,7 +47,7 @@ export class MatrixArchParser {
                         node.getAttribute("invisible") === "1"
                     ) {
                         archInfo.fieldAttrs[fieldName].isInvisible = true;
-                        break;
+                        //break;
                     }
 
                     if (node.hasAttribute("interval")) {
@@ -69,7 +69,10 @@ export class MatrixArchParser {
                 }
             }
         });
-
+        if (!archInfo.rowGroupBys.includes("id")) {
+            archInfo.rowGroupBys.push("id");
+            archInfo.fieldAttrs["id"] = { isInvisible: true };
+        }
         return archInfo;
     }
 }

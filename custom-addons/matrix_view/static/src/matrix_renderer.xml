@@ -11,7 +11,7 @@
                     <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
                         <!-- Empty cells for row fields -->
                         <t t-if="headerRow_index == 0">
-                            <th t-att-colspan="model.metaData.rowGroupBys.length" 
+                            <th t-att-colspan="model.metaData.rowGroupBys.length-1" 
                                 t-att-rowspan="table.headers.length"
                                 class="">
                             </th>
@@ -35,9 +35,12 @@
                     <!-- Row Field Headers -->
                     <tr>
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
-                            <th class="text-center">
-                                <span t-esc="model.metaData.fields[rowField.split(':')[0]].string"/>
-                            </th>
+                            <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
+                            <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
+                                <th class="text-center">
+                                    <span t-esc="model.metaData.fields[fieldName].string"/>
+                                </th>
+                            </t>
                         </t>
                         
                         <!-- Measure headers for each column group -->
@@ -56,10 +59,14 @@
                     <tr t-foreach="table.rows" t-as="row" t-key="'row_' + row_index">
                         <!-- Row fields as separate columns -->
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
-                            <td class="text-left">
-                                <span t-esc="row.data[rowField.split(':')[0]]?.label"/>
-                            </td>
+                            <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
+                            <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
+                                <td class="text-left">
+                                    <span t-esc="row.data[fieldName]?.label"/>
+                                </td>
+                            </t>
                         </t>
+                        
                         
                         <!-- Measurement values -->
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
