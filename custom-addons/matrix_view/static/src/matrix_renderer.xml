@@ -14,6 +14,10 @@
                             <th t-att-colspan="model.metaData.rowGroupBys.length-1" 
                                 t-att-rowspan="table.headers.length"
                                 class="">
+                                <t t-if="state.isEditing">
+                                    <!--<button class="btn-link">Add a line</button>-->
+                                    <a href="#" role="button" tabindex="0" class="add_line" t-on-click="() => this.onAddLineClicked(table.rows[0],model)">Add a line</a>
+                                </t>
                             </th>
                         </t>
                         
@@ -58,17 +62,94 @@
                 <tbody>
                     <tr t-foreach="table.rows" t-as="row" t-key="'row_' + row_index">
                         <!-- Row fields as separate columns -->
-                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
+                        <!--<t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
                                 <td class="text-left">
                                     <span t-esc="row.data[fieldName]?.label"/>
                                 </td>
                             </t>
+                        </t>-->
+                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
+                            <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
+                            <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
+                                <t t-if="state.isEditing and getFieldType(fieldName) === 'many2one'">
+                                    <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one" 
+                                        data-tooltip-delay="1000" tabindex="-1" t-att-name="fieldName" 
+                                        t-att-data-tooltip="row.data[fieldName]?.label" title="">
+                                        <div t-att-name="fieldName" class="o_field_widget o_field_many2one">
+                                            <div class="o_field_many2one_selection">
+                                                <div class="o_input_dropdown" t-on-click="(ev) => this.displayMany2oneRecord(ev,fieldName,row_index,row)"
+                                                    t-att-id="'div_'+row_index +'_' +fieldName">
+                                                    <div class="o-autocomplete dropdown">
+                                                        <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                        t-att-name="fieldName" t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)"
+                                                        autocomplete="off" placeholder="" t-att-value="row.data[fieldName]?.label"
+                                                        style="vertical-align:middle !important;"
+                                                        />
+                                                    </div>
+                                                    <span class="o_dropdown_button"></span>
+                                                </div>
+                                                <!--<button type="button" class="btn btn-link text-action oi o_external_button oi-arrow-right" 
+                                                    tabindex="-1" draggable="false" aria-label="Internal link" data-tooltip="Internal link"
+                                                    ></button>-->
+                                            </div>
+                                            <div class="o_field_many2one_extra"></div>
+                                        </div>
+                                    </td>
+                                </t>
+                                <t t-else="else">
+                                <td class="text-left">
+                                    <t t-if="state.isEditing">
+                                        <!-- Editable row group fields -->
+                                        <t t-if="getFieldType(fieldName) === 'date'">
+                                            <input type="date" t-att-name="fieldName"
+                                                t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
+                                                t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)"
+                                                class="form-control edit_mode o_field_date"/>
+                                        </t>
+                                        <!--<t t-elif="getFieldType(fieldName) === 'many2one'">
+                                            <select class="form-select edit_mode o_list_many2one" t-att-name="fieldName"
+                                                    t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)">
+                                                <t t-foreach="getMany2OneOptions(fieldName)" t-as="option" t-key="option.id">
+                                                    <option t-att-value="option.id" 
+                                                            t-att-selected="option.id === row.data[fieldName]?.value">
+                                                        <t t-esc="option.display_name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                            
+                                        </t>-->
+                                        <t t-elif="getFieldType(fieldName) === 'selection'">
+                                            <select class="form-select edit_mode o_list_selection" t-att-name="fieldName"
+                                                    t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)">
+                                                <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
+                                                    <option t-att-value="option[0]"
+                                                            t-att-selected="option[0] === row.data[fieldName]?.value">
+                                                        <t t-esc="option[1]"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </t>
+                                        <t t-else="">
+                                            <input type="text" t-att-name="fieldName"
+                                                t-att-value="row.data[fieldName]?.value"
+                                                t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)"
+                                                class="form-control edit_mode"/>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <!-- Non-edit mode display -->
+                                        <span t-esc="row.data[fieldName]?.label"/>
+                                    </t>
+                                </td>
+                                </t>
+                            </t>
                         </t>
                         
                         
                         <!-- Measurement values -->
+                        
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
                             <td class="text-end"
                                 t-att-class="{
@@ -76,6 +157,56 @@
                                     'font-weight-bold': cell.isBold
                                 }"
                                 t-on-click="() => this.onOpenView(cell)">
+                            <t t-if="state.isEditing">
+                                <!-- Date Field -->
+                                <t t-if="getFieldType(cell.measure) === 'date'">
+                                    <input type="date"
+                                        t-att-value="cell.value"
+                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
+                                        class="form-control edit_mode"/>
+                                </t>
+                                <!-- Many2One / Selection -->
+                                <t t-elif="['many2one', 'selection'].includes(getFieldType(cell.measure))">
+                                    <select class="form-select edit_mode"
+                                            t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)">
+                                        <t t-if="getFieldType(cell.measure) === 'selection'">
+                                            <t t-foreach="getSelectionOptions(cell.measure)" t-as="option" t-key="option.id">
+                                                <option t-att-value="option[0]"
+                                                        t-att-selected="option[0] === cell.value">
+                                                    <t t-esc="option[1]"/>
+                                                </option>
+                                            </t>
+                                        </t>
+                                        <t t-elif="getFieldType(cell.measure) === 'many2one'">
+                                            <!-- Fetch many2one options via ORM (simplified) -->
+                                            <t t-raw="'Many2One Dropdown Here'"/> 
+                                        </t>
+                                    </select>
+                                </t>
+                                <!-- Float/Integer -->
+                                <t t-elif="['float', 'integer'].includes(getFieldType(cell.measure))">
+                                    <input type="number"
+                                        t-att-value="cell.value"
+                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
+                                        class="form-control edit_mode"/>
+                                </t>
+                                <!-- Many2Many (Simplified) -->
+                                <t t-elif="getFieldType(cell.measure) === 'many2many'">
+                                    <input type="text"
+                                        t-att-value="cell.value"
+                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
+                                        class="form-control edit_mode"
+                                        placeholder="Comma-separated IDs"/>
+                                </t>
+                                <!-- Default (String) -->
+                                <t t-else="">
+                                    <input type="text"
+                                        t-att-value="cell.value"
+                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
+                                        class="form-control edit_mode"/>
+                                </t>
+                            </t>
+                            <t t-else="">
                                 <t t-if="cell.value !== undefined">
                                     <t t-if="cell.originIndexes.length > 1">
                                         <span t-att-class="{
@@ -90,6 +221,7 @@
                                 <t t-else="">
                                     <span t-att-style="'text-align:center'" t-esc="'-'"/>
                                 </t>
+                            </t>
                             </td>
                         </t>
                     </tr>

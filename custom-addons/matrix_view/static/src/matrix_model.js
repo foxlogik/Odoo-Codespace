@@ -133,6 +133,7 @@ export class MatrixModel extends Model {
             measurements: {},
             counts: {},
             numbering: {},
+            newRows: [],
         };
         const metaData = Object.assign({}, params.metaData, {
             customGroupBys: params.metaData.customGroupBys || new Map(),
@@ -422,7 +423,6 @@ export class MatrixModel extends Model {
         const headers = this._getTableHeaders();
         const rows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
             .filter(row => !(row.title === "Total" && row.indent === 0));
-    
         return {
             headers: headers,
             rows: rows
@@ -1096,6 +1096,7 @@ export class MatrixModel extends Model {
             if (node.directSubTrees.size === 0) {
                 // This is a leaf node - create a row
                 const row = {
+                    id : group.id,
                     data: {...currentRow}, // Copy all accumulated row data
                     groupId: [group.values, []],
                     subGroupMeasurements: []
@@ -1113,6 +1114,7 @@ export class MatrixModel extends Model {
                     });
     
                     row.subGroupMeasurements.push({
+                        id: groupIntersectionId,
                         groupId: groupIntersectionId,
                         originIndexes: originIndexes,
                         measure: measure,
@@ -1236,6 +1238,10 @@ export class MatrixModel extends Model {
     _prepareData(group, groupSubdivisions, config) {
         const { data, metaData } = config;
         const groupRowValues = group.rowValues;
+        console.log("*********_prepareData*******")
+        console.log(groupRowValues)
+        console.log(data)
+        console.log(metaData)
         let groupRowLabels = [];
         let rowSubTree = data.rowGroupTree;
         let root;

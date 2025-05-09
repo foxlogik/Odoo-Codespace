@@ -12,7 +12,18 @@ import { MatrixGroupByMenu } from "./matrix_group_by_menu";
 import { Component, onWillUpdateProps, useRef, useState } from "@odoo/owl";
 import { download } from "@web/core/network/download";
 import { useService } from "@web/core/utils/hooks";
+import { Domain } from "@web/core/domain";
+import { session } from "@web/session";
+const companyId = session.user_context.company_id;
+
 const formatters = registry.category("formatters");
+
+function updateSelection($items, index) {
+    $items.removeClass("active");
+    const $selected = $items.eq(index);
+    $selected.addClass("active");
+    $selected[0]?.scrollIntoView({ block: "nearest" });
+}
 
 export class MatrixRenderer extends Component {
     setup() {
@@ -30,6 +41,12 @@ export class MatrixRenderer extends Component {
         this.state = useState({
             edits: {},
             isEditing: false,
+        });
+        this._m2oOptions = [];
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".o_input_dropdown")) {
+                $(".o-autocomplete--dropdown-menu").remove();
+            }
         });
     }
     
@@ -64,6 +81,19 @@ export class MatrixRenderer extends Component {
         } else {
             this.table.rows = [];
         }
+    }
+    formatDate(value, fieldType) {
+        const formattedDate = new Date(value);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (fieldType === 'datetime') {
+            //return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+            return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
+        }
+        else {
+            //return formattedDate.toISOString().split('T')[0];
+            return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
+        }
+        
     }
     /**
      * Get the formatted value of the cell.
@@ -188,48 +218,334 @@ export class MatrixRenderer extends Component {
     //--------------------------------------------------------------------------
     // Handlers
     //--------------------------------------------------------------------------
+    /**
+     * Get the field type for a measure
+     * @param {string} measureName
+     * @returns {string}
+     */
+    getFieldType(measureName) {
+        const field = this.model.metaData.fields[measureName];
+        return field ? field.type : 'char';
+    }
+
+    /**
+     * Get selection options for a field
+     * @param {string} measureName
+     * @returns {Array[]}
+     */
+    getSelectionOptions(measureName) {
+        const field = this.model.metaData.fields[measureName];
+        return field.selection || [];
+    }
+
+    /**
+     * Fetch many2one options
+     * @param {string} fieldName
+     */
+    async getMany2OneOptions(fieldName) {
+        const field = this.model.metaData.fields[fieldName];
+        if (field.type === "many2one") {
+            const model = field.relation;
+            let domain = [];
+            const pattern = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])])";
+            if (field.domain) {
+                // Replace the pattern with the actual company_id
+                var fieldDomain=JSON.stringify(field.domain);
+                if (fieldDomain.includes(pattern)) {
+                    domain = companyId
+                                ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
+                                : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                    /*try {
+                    
+                        var splitedDomain=fieldDomain.split('+');
+                        
+                        if (splitedDomain.length > 1) {
+                            var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
+                            domain=[...companyDomain, ...additionalDomain];
+                        }
+                    
+                    
+                    } catch (error) {
+                        console.error("Invalid domain:", field.domain, error);
+                        domain=[]
+                    }*/
+                }
+                else{
+                    domain=new Domain(field.domain).toList();
+                }
+            }
+            
+            const records = await this.orm.searchRead(model, domain, ["display_name"]);
+            return records;
+        }
+        return [];
+    }
+    async displayMany2oneRecord(ev, fieldName,row_id,row) {
+        // Remove any existing dropdown first
+        $(".o-autocomplete--dropdown-menu").remove();   
+        const options = await this.getMany2OneOptions(fieldName);
+        this._m2oOptions = options;
+        // The clicked .o_input_dropdown div
+        const dropdownEl = "#div_"+row_id+"_"+fieldName;
+        //setTimeout(() => {
+        const $input = $(dropdownEl).find("input.o-autocomplete--input");
+
+        /*if (!$input.length) {
+            console.warn("Input not found inside .o_input_dropdown");
+            return;
+        }*/
+        
+        const offset = $input.offset();
+        const inputHeight = $input.outerHeight();
+    
+        
+        const $menu = $('<ul>', {
+            class: "o-autocomplete--dropdown-menu ui-widget show dropdown-menu ui-autocomplete",
+            css: {
+                position: "fixed",
+                top: offset.top + inputHeight,
+                left: offset.left,
+                "z-index": 1000,
+            },
+            id: "dropdown-menu_"+row_id+"_"+fieldName,
+        });
+        const self = this;
+        options.forEach(opt => {
+            const $item = $('<li>', {
+                class: "o-autocomplete--dropdown-item ui-menu-item d-block"
+            }).append(
+                $('<a>', {
+                    href: "#",
+                    class: "dropdown-item ui-menu-item-wrapper text-truncate",
+                    text: opt.display_name,
+                    click: (e) => {
+                        e.preventDefault();
+                        
+                        //this.row.data[fieldName] = opt.id;
+                        console.log("Selected Many2oneRecord self.row",self.row,this.row);
+                        //alert("Selected Many2oneRecord: "+ opt.id + '-'+ opt.display_name);
+                        //self.row.data[fieldName] = { id: opt.id, label: opt.display_name };
+                        self._selectMany2OneOption(opt, fieldName,$menu, dropdownEl,row);
+                        self.render();
+                    }
+                })
+            );
+            $menu.append($item);
+        });
+    
+        // Optional "Search More"
+        /*$menu.append(
+            $('<li>', { class: "o-autocomplete--dropdown-item ui-menu-item d-block o_m2o_dropdown_option o_m2o_dropdown_option_search_more" })
+                .append(
+                    $('<a>', {
+                        href: "#",
+                        class: "dropdown-item ui-menu-item-wrapper text-truncate",
+                        text: "Search More...",
+                        click: (e) => {
+                            e.preventDefault();
+                            alert("Open search modal (to be implemented)");
+                        }
+                    })
+                )
+        );*/
+    
+        $("body").append($menu);
+        /*$input.off("keyup.m2o").on("keyup.m2o", (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            this._filterMany2OneOptions(query, fieldName, $menu,dropdownEl,row);
+        });*/
+        /*$input.addEventListener("keyup", (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            this._filterMany2OneOptions(query, fieldName, $(dropdownEl));
+        });*/
+        //},1000);
+        let selectedIndex = -1;
+        $input.off("keydown.m2o").on("keydown.m2o", function (e) {
+            const menuItems = $('#dropdown-menu_'+row_id+'_'+fieldName).find("li.o-autocomplete--dropdown-item");
+            const total = menuItems.length;
+            //if (!total) return;
+            // If the menu is not open, do nothing
+            if (!$menu.is(":visible")) {
+                 $("body").append($menu);
+            }
+            switch (e.key) {
+                case "ArrowDown":
+                    e.preventDefault();
+                    
+                    selectedIndex = (selectedIndex + 1) % total;
+                    updateSelection(menuItems, selectedIndex);
+                    break;
+
+                case "ArrowUp":
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + total) % total;
+                    updateSelection(menuItems, selectedIndex);
+                    break;
+
+                case "Enter":
+                    e.preventDefault();
+                    if (selectedIndex >= 0 && selectedIndex < total) {
+                        $(menuItems[selectedIndex]).find("a")[0].click();
+                    }
+                    break;
+                case "Escape":
+                    e.preventDefault();
+                    $menu.remove();
+                    break;
+                default:
+                    // Handle other keys if needed
+                    const query = e.target.value.toLowerCase().trim();
+                    self._filterMany2OneOptions(query, fieldName, $menu,dropdownEl,row);
+                    break;
+
+            }
+        });
+        
+        
+    }
+    
+    _filterMany2OneOptions(query, fieldName, $menu,dropdownEl,row) {
+        //alert("_filterMany2OneOptions")
+        const filtered = this._m2oOptions.filter(opt =>
+            opt.display_name.toLowerCase().includes(query)
+        );
+        const self = this;
+        const $menu_displayed = $(".o-autocomplete--dropdown-menu");
+        $menu.empty();  // Clear old items
+    
+        filtered.forEach(opt => {
+            const $item = $('<li>', {
+                class: "o-autocomplete--dropdown-item ui-menu-item d-block"
+            }).append(
+                $('<a>', {
+                    href: "#",
+                    class: "dropdown-item ui-menu-item-wrapper text-truncate",
+                    html: this._highlightMatch(opt.display_name, query),
+                    click: (e) => {
+                        e.preventDefault();
+                        console.log("Selected Many2OneOption self.row",self.row,this.row);
+                        //alert("Selected Many2OneOption: "+ opt.id + '-'+ opt.display_name);
+                        //self.row.data[fieldName] = { id: opt.id, label: opt.display_name };
+                        self._selectMany2OneOption(opt, fieldName,$menu, dropdownEl,row);
+                        self.render();
+                    },
+                    
+                })
+            );
+            $menu.append($item);
+        });
+    
+        // If no results, show "No match"
+        if (!filtered.length) {
+            $menu.append(
+                $('<li>', {
+                    class: "o-autocomplete--dropdown-item ui-menu-item d-block text-muted px-3",
+                    text: "No matching results"
+                })
+            );
+        }
+    
+        // Always add Search More
+        /*$menu.append(
+            $('<li>', { class: "o-autocomplete--dropdown-item ui-menu-item d-block o_m2o_dropdown_option o_m2o_dropdown_option_search_more" })
+                .append(
+                    $('<a>', {
+                        href: "#",
+                        class: "dropdown-item ui-menu-item-wrapper text-truncate",
+                        text: "Search More...",
+                        click: (e) => {
+                            e.preventDefault();
+                            alert("Open search modal (to be implemented)");
+                        }
+                    })
+                )
+        );*/
+        if ($menu_displayed.length<=0) {
+            // Append the menu to the body
+           $("body").append($menu);
+        }
+    }
+    _selectMany2OneOption(option, fieldName,$menu,dropdownEl,row) {
+        console.log("Selected Many2OneOption", option);
+        console.log(dropdownEl)
+        const input = $(dropdownEl).find("input.o-autocomplete--input");
+        console.log(input)
+        if (!input) {
+            console.warn("Input not found inside .o_input_dropdown");
+            return;
+        }
+        // Set the value of the input to the selected option 
+        input.val(option.display_name);
+        input.closest('td').attr('data-tooltip', option.display_name);
+        // Set the value of the row data to the selected option
+        row.data[fieldName] = { id: option.id, label: option.display_name };
+        // Remove the dropdown menu
+        $menu.remove();
+        
+    
+    }
+    _highlightMatch(name, query) {
+        const escapedName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const index = escapedName.toLowerCase().indexOf(query);
+        if (index === -1) return escapedName;
+    
+        const before = escapedName.slice(0, index);
+        const match = escapedName.slice(index, index + query.length);
+        const after = escapedName.slice(index + query.length);
+    
+        return `${before}<strong>${match}</strong>${after}`;
+    }
+    
     //Edit Button to make the matrix cells editable and show the Save and Cancel Buttons
     onEditButtonClicked(){
+        const edits = {};
+        this.table.rows.forEach(row => {
+            edits[row.id] = {};
+            this.model.metaData.rowGroupBys.forEach(field => {
+                const fieldName = field.split(':')[0];
+                edits[row.id][fieldName] = row.data[fieldName]?.value;
+            });
+        });
+        this.state.edits = edits;
+        this.state.isEditing = true;
         $('.o_matrix_edit').hide();
         $('.o_matrix_download').hide();
         $('.o_matrix_save').show();
         $('.o_matrix_cancel').show();
-        this.state.isEditing = !this.state.isEditing;
-        if (!this.state.isEditing) {
-            this.state.edits = {};
-        }
     }
     onFieldEdit(rowId, fieldName, value) {
-        if (!this.state.edits[rowId]) {
+        /*if (!this.state.edits[rowId]) {
             this.state.edits[rowId] = {};
         }
-        this.state.edits[rowId][fieldName] = value;
+        this.state.edits[rowId][fieldName] = value;*/
     }
+    
     //Save Button to save the modified datas and render the readonly mode
-    async onSaveButtonClicked(){
-        $('.o_matrix_edit').show();
-        $('.o_matrix_download').show();
-        $('.o_matrix_save').hide();
-        $('.o_matrix_cancel').hide();
-        try {
-            const updates = [];
-            for (const [rowId, changes] of Object.entries(this.state.edits)) {
-                updates.push({
-                    id: rowId,
-                    changes,
-                });
+    async onSaveButtonClicked() {
+        const updates = [];
+        for (const [rowId, changes] of Object.entries(this.state.edits)) {
+            const validChanges = {};
+            for (const [field, value] of Object.entries(changes)) {
+                const fieldType = this.getFieldType(field);
+                // Basic validation
+                if (['float', 'integer'].includes(fieldType) && isNaN(value)) {
+                    this.notification.add(_t("Invalid number for field ") + field, { type: "danger" });
+                    return;
+                }
+                validChanges[field] = value;
             }
-            
+            updates.push({ id: parseInt(rowId, 10), changes: validChanges });
+        }
+        try {
             await this.orm.write(
-                this.props.model.metaData.resModel,
+                this.model.metaData.resModel,
                 updates.map(u => u.id),
                 updates.map(u => u.changes)
             );
-            
             this.notification.add(_t("Changes saved successfully"), { type: "success" });
             this.state.isEditing = false;
             this.state.edits = {};
-            this.props.model.load(this.props.model.searchParams); // Refresh data
+            this.model.load(this.model.searchParams); // Refresh data
         } catch (error) {
             this.notification.add(_t("Error saving changes"), { type: "danger" });
             console.error(error);
@@ -244,11 +560,20 @@ export class MatrixRenderer extends Component {
         this.state.isEditing = false;
         this.state.edits = {};
     }
+
+    onAddLineClicked(row,model){
+        alert("Add a line")
+        console.log(row)
+        console.log(model)
+        this.model.addLine(row,model);
+        this.render();
+    }
     /**
      * Exports the current matrix table data in a xls file. For this, we have to
      * serialize the current state, then call the server /matrix_view/matrix/export_xlsx.
      * Force a reload before exporting to ensure to export up-to-date data.
      */
+    
     onDownloadButtonClicked() {
         if (this.model.getTableWidth() > 16384) {
             throw new Error(
@@ -307,7 +632,7 @@ export class MatrixRenderer extends Component {
      * @param {CustomEvent} ev
      */
     onOpenView(cell) {
-        if (cell.value === undefined || this.model.metaData.disableLinking) {
+        if (cell.value === undefined || this.model.metaData.disableLinking || this.state.isEditing) {
             return;
         }
 
