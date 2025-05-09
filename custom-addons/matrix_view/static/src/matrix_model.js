@@ -29,6 +29,7 @@ function computeVariation(value, comparisonValue) {
     return (value - comparisonValue) / Math.abs(comparisonValue);
 }
 function formatDate(value, fieldType) {
+    if (!value) return '';
     const formattedDate = new Date(value);
     const pad = (n) => String(n).padStart(2, '0');
     if (fieldType === 'datetime') {
@@ -135,6 +136,9 @@ export class MatrixModel extends Model {
             numbering: {},
             newRows: [],
         };
+        if (!Array.isArray(this.data.newRows)) {
+            this.data.newRows = [];
+        }
         const metaData = Object.assign({}, params.metaData, {
             customGroupBys: params.metaData.customGroupBys || new Map(),
             expandedRowGroupBys: params.metaData.expandedRowGroupBys || [],
@@ -150,6 +154,45 @@ export class MatrixModel extends Model {
     //--------------------------------------------------------------------------
     // Public
     //--------------------------------------------------------------------------
+    addLine() {
+        if (!Array.isArray(this.data.newRows)) {
+            this.data.newRows = [];
+        }
+
+        const columns = this._getLeafColumns(this.data.colGroupTree);
+        const subGroupMeasurements = columns.map(column => ({
+            groupId: [[], column.groupId[1]],
+            measure: column.measure,
+            value: null,
+            isBold: false,
+            originIndexes: [0]
+        }));
+
+        const newRow = {
+            id: `new_${Date.now()}`,
+            data: this._createEmptyRowData(),
+            groupId: [[]],
+            subGroupMeasurements: subGroupMeasurements
+        };
+        
+        this.data.newRows.unshift(newRow);
+        this.notify();
+    }
+
+    _createEmptyRowData() {
+        const data = {};
+        this.metaData.rowGroupBys.forEach(groupBy => {
+            const fieldName = groupBy.split(':')[0];
+            // Initialize with proper structure
+            data[fieldName] = {
+                value: null,
+                label: '',
+                ...(this.data[fieldName] || {}) // Preserve existing data if any
+            };
+        });
+        return data;
+    }
+    
 
     /**
      * Add a groupBy to rowGroupBys or colGroupBys according to provided type.
@@ -419,7 +462,7 @@ export class MatrixModel extends Model {
      * @returns {Object}
      */
     
-    getTable() {
+    /*getTable() {
         const headers = this._getTableHeaders();
         const rows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
             .filter(row => !(row.title === "Total" && row.indent === 0));
@@ -427,9 +470,19 @@ export class MatrixModel extends Model {
             headers: headers,
             rows: rows
         };
+    }*/
+    getTable() {
+        const headers = this._getTableHeaders();
+        const modelRows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
+            .filter(row => !(row.title === "Total" && row.indent === 0));
+        
+        return {
+            headers: headers,
+            rows: [...(this.data.newRows || []), ...modelRows]
+        };
     }
     
-    _getLeafColumns(tree) {
+    /*_getLeafColumns(tree) {
         const columns = [];
         const traverse = (node) => {
             if (node.directSubTrees.size === 0) {
@@ -438,6 +491,24 @@ export class MatrixModel extends Model {
                     groupId: [[], node.root.values],
                     measure: this.metaData.activeMeasures[0], // Default measure
                     width: 1
+                });
+            } else {
+                [...node.directSubTrees.values()].forEach(subTree => traverse(subTree));
+            }
+        };
+        traverse(tree);
+        return columns;
+    }*/
+    _getLeafColumns(tree) {
+        const columns = [];
+        const traverse = (node) => {
+            if (node.directSubTrees.size === 0) {
+                this.metaData.activeMeasures.forEach(measure => {
+                    columns.push({
+                        groupId: [[], node.root.values],
+                        measure: measure,
+                        width: 1
+                    });
                 });
             } else {
                 [...node.directSubTrees.values()].forEach(subTree => traverse(subTree));
@@ -466,6 +537,7 @@ export class MatrixModel extends Model {
      * @param {SearchParams} searchParams
      */
     async load(searchParams) {
+        this.data.newRows = [];
         this.searchParams = searchParams;
         const processedMeasures = processMeasure(searchParams.context.matrix_measures);
         const activeMeasures = processedMeasures || this.metaData.activeMeasures;

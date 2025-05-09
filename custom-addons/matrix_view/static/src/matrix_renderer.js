@@ -83,6 +83,9 @@ export class MatrixRenderer extends Component {
         }
     }
     formatDate(value, fieldType) {
+        if (!value) {
+            return "";
+        }
         const formattedDate = new Date(value);
         const pad = (n) => String(n).padStart(2, '0');
         if (fieldType === 'datetime') {
@@ -512,6 +515,10 @@ export class MatrixRenderer extends Component {
         $('.o_matrix_download').hide();
         $('.o_matrix_save').show();
         $('.o_matrix_cancel').show();
+        const firstInput = $('.edit_mode').first();
+        if (firstInput) {
+            firstInput.focus();
+        }
     }
     onFieldEdit(rowId, fieldName, value) {
         /*if (!this.state.edits[rowId]) {
@@ -521,7 +528,7 @@ export class MatrixRenderer extends Component {
     }
     
     //Save Button to save the modified datas and render the readonly mode
-    async onSaveButtonClicked() {
+    /*async onSaveButtonClicked() {
         const updates = [];
         for (const [rowId, changes] of Object.entries(this.state.edits)) {
             const validChanges = {};
@@ -550,6 +557,53 @@ export class MatrixRenderer extends Component {
             this.notification.add(_t("Error saving changes"), { type: "danger" });
             console.error(error);
         }
+    }*/
+    
+    async onSaveButtonClicked() {
+        try {
+            const creates = [];
+            const updates = [];
+
+            // Process new rows
+            this.model.data.newRows?.forEach(newRow => {
+                if (this.state.edits[newRow.id]) {
+                    creates.push(this.state.edits[newRow.id]);
+                }
+            });
+
+            // Process existing rows
+            for (const [rowId, changes] of Object.entries(this.state.edits)) {
+                if (!rowId.startsWith('new_')) {
+                    updates.push({
+                        id: parseInt(rowId, 10),
+                        changes
+                    });
+                }
+            }
+
+            // Execute writes
+            if (creates.length) {
+                await this.orm.create(this.model.metaData.resModel, creates);
+            }
+            if (updates.length) {
+                await this.orm.write(
+                    this.model.metaData.resModel,
+                    updates.map(u => u.id),
+                    updates.map(u => u.changes)
+                );
+            }
+
+            // Reset state
+            this.model.data.newRows = [];
+            this.state.isEditing = false;
+            this.state.edits = {};
+            this.model.load(this.model.searchParams);
+            
+            this.notification.add(_t("Changes saved successfully"), { type: "success" });
+        } catch (error) {
+            this.notification.add(_t("Error saving changes"), { type: "danger" });
+            console.error("Save error:", error);
+        }
     }
     //Cancel Button to cancel the ongoing modifications and render the readonly mode
     onCancelButtonClicked(){
@@ -557,17 +611,41 @@ export class MatrixRenderer extends Component {
         $('.o_matrix_download').show();
         $('.o_matrix_save').hide();
         $('.o_matrix_cancel').hide();
+        
+        // Reset model state
+        this.model.data.newRows = [];
+        this.model.load(this.model.searchParams);
+        
+        // Reset UI state
         this.state.isEditing = false;
         this.state.edits = {};
+        
+        // Force full reload
+        this.model.notify();
     }
 
-    onAddLineClicked(row,model){
-        alert("Add a line")
-        console.log(row)
-        console.log(model)
-        this.model.addLine(row,model);
+
+    onAddLineClicked() {
+        this.model.addLine();
+        this.state.edits = this.state.edits || {};
+        const newRowId = this.model.data.newRows[0]?.id;
+        if (newRowId) {
+            this.state.edits[newRowId] = {};
+            this.model.metaData.rowGroupBys.forEach(field => {
+                const fieldName = field.split(':')[0];
+                this.state.edits[newRowId][fieldName] = null;
+            });
+        }
         this.render();
+        const firstInput = $('.edit_mode').first();
+        if (firstInput) {
+            firstInput.focus();
+        }
     }
+    onAddColumnClicked() {
+        alert("Add column");
+    }
+
     /**
      * Exports the current matrix table data in a xls file. For this, we have to
      * serialize the current state, then call the server /matrix_view/matrix/export_xlsx.

@@ -32,6 +32,12 @@
                                 }"
                                 t-on-click.prevent="() => cell.isLeaf !== undefined &amp;&amp; this.onHeaderClick(cell, 'col')">
                                 <span t-esc="cell.title"/>
+                                <t t-if="cell_index==headerRow.length-1">
+                                    <t t-if="state.isEditing">
+                                        <i class="fa fa-plus-square me-1" data-tooltip="Add a column" title="" 
+                                            style="margin-left:20px!important;" t-on-click="onAddColumnClicked"/>
+                                    </t>
+                                </t>
                             </th>
                         </t>
                     </tr>
@@ -84,11 +90,12 @@
                                                     <div class="o-autocomplete dropdown">
                                                         <input type="text" class="o-autocomplete--input o_input edit_mode" 
                                                         t-att-name="fieldName" t-on-change="(ev) => onFieldEdit(row.id, fieldName, ev.target.value)"
-                                                        autocomplete="off" placeholder="" t-att-value="row.data[fieldName]?.label"
-                                                        style="vertical-align:middle !important;"
+                                                        autocomplete="off" placeholder="" 
+                                                        t-att-value="row.data[fieldName]?.label || ''" 
+                                                        style="margin-top:3px!important;height: 30px!important;"
                                                         />
                                                     </div>
-                                                    <span class="o_dropdown_button"></span>
+                                                    <span class="o_dropdown_button" style="top:13px!important;"></span>
                                                 </div>
                                                 <!--<button type="button" class="btn btn-link text-action oi o_external_button oi-arrow-right" 
                                                     tabindex="-1" draggable="false" aria-label="Internal link" data-tooltip="Internal link"
@@ -155,73 +162,24 @@
                                 t-att-class="{
                                     'cursor-pointer': cell.value !== undefined,
                                     'font-weight-bold': cell.isBold
-                                }"
-                                t-on-click="() => this.onOpenView(cell)">
-                            <t t-if="state.isEditing">
-                                <!-- Date Field -->
-                                <t t-if="getFieldType(cell.measure) === 'date'">
-                                    <input type="date"
-                                        t-att-value="cell.value"
-                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
-                                        class="form-control edit_mode"/>
-                                </t>
-                                <!-- Many2One / Selection -->
-                                <t t-elif="['many2one', 'selection'].includes(getFieldType(cell.measure))">
-                                    <select class="form-select edit_mode"
-                                            t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)">
-                                        <t t-if="getFieldType(cell.measure) === 'selection'">
-                                            <t t-foreach="getSelectionOptions(cell.measure)" t-as="option" t-key="option.id">
-                                                <option t-att-value="option[0]"
-                                                        t-att-selected="option[0] === cell.value">
-                                                    <t t-esc="option[1]"/>
-                                                </option>
-                                            </t>
-                                        </t>
-                                        <t t-elif="getFieldType(cell.measure) === 'many2one'">
-                                            <!-- Fetch many2one options via ORM (simplified) -->
-                                            <t t-raw="'Many2One Dropdown Here'"/> 
-                                        </t>
-                                    </select>
-                                </t>
-                                <!-- Float/Integer -->
-                                <t t-elif="['float', 'integer'].includes(getFieldType(cell.measure))">
-                                    <input type="number"
-                                        t-att-value="cell.value"
-                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
-                                        class="form-control edit_mode"/>
-                                </t>
-                                <!-- Many2Many (Simplified) -->
-                                <t t-elif="getFieldType(cell.measure) === 'many2many'">
-                                    <input type="text"
-                                        t-att-value="cell.value"
-                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
-                                        class="form-control edit_mode"
-                                        placeholder="Comma-separated IDs"/>
-                                </t>
-                                <!-- Default (String) -->
-                                <t t-else="">
-                                    <input type="text"
-                                        t-att-value="cell.value"
-                                        t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
-                                        class="form-control edit_mode"/>
-                                </t>
-                            </t>
-                            <t t-else="">
-                                <t t-if="cell.value !== undefined">
-                                    <t t-if="cell.originIndexes.length > 1">
-                                        <span t-att-class="{
-                                            'text-success': cell.value &gt; 0,
-                                            'text-danger': cell.value &lt; 0
-                                        }" t-esc="getFormattedVariation(cell)"/>
+                                }">
+                                <t t-if="state.isEditing">
+                                    <t t-if="getFieldType(cell.measure) === 'float' or getFieldType(cell.measure) === 'integer'">
+                                        <input type="number"
+                                            t-att-value="cell.value || 0"
+                                            t-on-change="(ev) => onFieldEdit(row.id, cell.measure, Number(ev.target.value))"
+                                            class="form-control edit_mode"/>
                                     </t>
                                     <t t-else="">
-                                        <span t-esc="getFormattedValue(cell)"/>
+                                        <input type="text"
+                                            t-att-value="cell.value || ''"
+                                            t-on-change="(ev) => onFieldEdit(row.id, cell.measure, ev.target.value)"
+                                            class="form-control edit_mode"/>
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <span t-att-style="'text-align:center'" t-esc="'-'"/>
+                                    <t t-esc="cell.value || '-'"/>
                                 </t>
-                            </t>
                             </td>
                         </t>
                     </tr>
