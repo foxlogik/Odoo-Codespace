@@ -13,7 +13,7 @@ import { Component, useRef } from "@odoo/owl";
 export class MatrixController extends Component {
     setup() {
         this.model = useModelWithSampleData(this.props.Model, this.props.modelParams);
-
+        
         useSetupView({
             rootRef: useRef("root"),
             getLocalState: () => {

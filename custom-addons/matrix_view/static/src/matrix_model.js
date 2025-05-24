@@ -135,6 +135,7 @@ export class MatrixModel extends Model {
             counts: {},
             numbering: {},
             newRows: [],
+            dynamicColumns: new Map(),
         };
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
@@ -149,6 +150,9 @@ export class MatrixModel extends Model {
 
         this.reload = false; // used to discriminate between the first load and subsequent reloads
         this.nextActiveMeasures = null; // allows to toggle several measures consecutively
+
+        //this.data.newColumns = params.data?.newColumns || [];
+        this.data.dynamicColumns = params.data?.dynamicColumns || new Map();
     }
 
     //--------------------------------------------------------------------------
@@ -172,7 +176,8 @@ export class MatrixModel extends Model {
             id: `new_${Date.now()}`,
             data: this._createEmptyRowData(),
             groupId: [[]],
-            subGroupMeasurements: subGroupMeasurements
+            subGroupMeasurements: subGroupMeasurements,
+            isNew: true,
         };
         
         this.data.newRows.unshift(newRow);
@@ -193,7 +198,62 @@ export class MatrixModel extends Model {
         return data;
     }
     
+    addColumn(fieldName, interval) {
+        if (this.race.getCurrentProm()) return;
 
+        const metaData = this._buildMetaData();
+        let groupBy = fieldName;
+        if (interval) {
+            groupBy = `${fieldName}:${interval}`;
+        }
+        
+        metaData.expandedColGroupBys.push(groupBy);
+        const config = { metaData, data: this.data };
+        
+        // Ajouter le nouveau groupe aux colonnes
+        const newGroupId = [[], [fieldName]];
+        this._addGroup(this.data.colGroupTree, [fieldName], [fieldName]);
+        
+        // Initialiser les mesures pour la nouvelle colonne
+        this.metaData.activeMeasures.forEach(measure => {
+            const key = JSON.stringify([[], [fieldName]]);
+            this.data.measurements[key] = this.data.measurements[key] || [{
+                [measure]: 0
+            }];
+        });
+
+        this.metaData = metaData;
+        this.notify();
+    }
+
+    async addDynamicColumn(fieldName) {
+        const field = this.metaData.fields[fieldName];
+        const columnKey = `col_${fieldName}_${Date.now()}`;
+        
+        // Initialiser les valeurs pour toutes les lignes
+        this.data.rows.forEach(row => {
+            row[columnKey] = {
+                value: null,
+                fieldType: field.type,
+                relation: field.relation,
+                domain: field.domain
+            };
+        });
+
+        this.data.dynamicColumns.set(columnKey, {
+            fieldName,
+            selectedValue: null,
+            fieldInfo: field
+        });
+        
+        this.notify();
+    }
+
+    updateColumnValue(columnKey, value) {
+        const column = this.data.dynamicColumns.get(columnKey);
+        column.selectedValue = value;
+        this.notify();
+    }
     /**
      * Add a groupBy to rowGroupBys or colGroupBys according to provided type.
      *
@@ -337,7 +397,7 @@ export class MatrixModel extends Model {
         const originCount = this.metaData.origins.length;
 
         const table = this.getTable();
-
+        
         // process headers
         const headers = table.headers;
         let colGroupHeaderRows;
@@ -462,15 +522,6 @@ export class MatrixModel extends Model {
      * @returns {Object}
      */
     
-    /*getTable() {
-        const headers = this._getTableHeaders();
-        const rows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
-            .filter(row => !(row.title === "Total" && row.indent === 0));
-        return {
-            headers: headers,
-            rows: rows
-        };
-    }*/
     getTable() {
         const headers = this._getTableHeaders();
         const modelRows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
@@ -481,24 +532,45 @@ export class MatrixModel extends Model {
             rows: [...(this.data.newRows || []), ...modelRows]
         };
     }
-    
-    /*_getLeafColumns(tree) {
-        const columns = [];
-        const traverse = (node) => {
-            if (node.directSubTrees.size === 0) {
-                // Leaf node - add column
-                columns.push({
-                    groupId: [[], node.root.values],
-                    measure: this.metaData.activeMeasures[0], // Default measure
-                    width: 1
-                });
-            } else {
-                [...node.directSubTrees.values()].forEach(subTree => traverse(subTree));
+    /*async _getRecordIdsForRow(row) {
+        const domain = [];
+        
+        // Build domain from row group values
+        this.metaData.rowGroupBys.forEach(groupBy => {
+            const fieldName = groupBy.split(':')[0];
+            const value = row.data[fieldName]?.value;
+            if (value !== undefined && value !== null) {
+                domain.push([fieldName, '=', value]);
             }
+        });
+
+        if (domain.length === 0) return [];
+        
+        // Get matching record IDs
+        return this.orm.search(this.metaData.resModel, domain, { limit: 1000 });
+    }
+
+    async getTable() {
+        const headers = this._getTableHeaders();
+        const modelRows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
+            .filter(row => !(row.title === "Total" && row.indent === 0));
+        
+        // Enhance rows with record IDs (using Promise.all for async)
+        const enhancedRows = await Promise.all(modelRows.map(async row => {
+            const recordIds = await this._getRecordIdsForRow(row);
+            return {
+                ...row,
+                _recordIds: recordIds, // Store IDs
+                _isAggregate: recordIds.length > 1
+            };
+        }));
+        
+        return {
+            headers,
+            rows: [...(this.data.newRows || []), ...enhancedRows]
         };
-        traverse(tree);
-        return columns;
     }*/
+    
     _getLeafColumns(tree) {
         const columns = [];
         const traverse = (node) => {
@@ -1072,7 +1144,6 @@ export class MatrixModel extends Model {
             title: "",
             width: 1,
         });*/
-
         // col groupby cells with group values
         /**
          * Recursive function that generates the header cells corresponding to
@@ -1098,6 +1169,15 @@ export class MatrixModel extends Model {
                         : fields[colGroupBys[rowIndex - 1].split(":")[0]].string,
                 title: group.labels.length ? group.labels[group.labels.length - 1] : _t("Total"),
                 width: leafCount * measureCount * (2 * originCount - 1),
+                name:rowIndex === 0
+                        ? undefined
+                        : fields[colGroupBys[rowIndex - 1].split(":")[0]].name,
+                fieldId:rowIndex === 0
+                        ? undefined
+                        : group.values[0],
+                fieldType:rowIndex === 0
+                        ? undefined
+                        : fields[colGroupBys[rowIndex - 1].split(":")[0]].type,
             };
             if (group.labels.length){
                 row.push(cell);
@@ -1111,7 +1191,6 @@ export class MatrixModel extends Model {
                 generateTreeHeaders(subTree, fields);
             });
         }
-
         generateTreeHeaders(this.data.colGroupTree, this.metaData.fields);
         // blank top right cell for 'Total' group (if there is more that one leaf)
         if (leafCounts[JSON.stringify(this.data.colGroupTree.root.values)] > 1) {
@@ -1180,11 +1259,15 @@ export class MatrixModel extends Model {
                     const groupIntersectionId = [group.values, colGroupId[1]];
                     const measure = column.measure;
                     const originIndexes = column.originIndexes || [0];
-    
                     const value = this._getCellValue(groupIntersectionId, measure, originIndexes, {
                         data: this.data,
                     });
-    
+                    console.log("groupIntersectionId============", groupIntersectionId);
+                    /*const recordIds = this._getRecordIdsForCell(groupIntersectionId).then(record_ids => {
+                            console.log(record_ids); // -> [1]
+                            return record_ids; 
+                        });*/
+                    //console.log("recordIds============", recordIds,recordIds[0]);
                     row.subGroupMeasurements.push({
                         id: groupIntersectionId,
                         groupId: groupIntersectionId,
@@ -1192,6 +1275,7 @@ export class MatrixModel extends Model {
                         measure: measure,
                         value: value,
                         isBold: !groupIntersectionId[0].length || !groupIntersectionId[1].length,
+                        //recordIds: recordIds,
                     });
                 });
                 
@@ -1209,6 +1293,7 @@ export class MatrixModel extends Model {
         flattenTree(tree);
         return rows;
     }
+    
     
     /**
      * returns the height of a given groupTree
@@ -1310,10 +1395,6 @@ export class MatrixModel extends Model {
     _prepareData(group, groupSubdivisions, config) {
         const { data, metaData } = config;
         const groupRowValues = group.rowValues;
-        console.log("*********_prepareData*******")
-        console.log(groupRowValues)
-        console.log(data)
-        console.log(metaData)
         let groupRowLabels = [];
         let rowSubTree = data.rowGroupTree;
         let root;

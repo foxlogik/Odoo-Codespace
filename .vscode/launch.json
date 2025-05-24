@@ -9,7 +9,7 @@
           "type": "debugpy",
           "request": "launch",
           "program": "${workspaceFolder}/odoo/odoo-bin",
-          "args": ["--config=${workspaceFolder}/odoo.conf"],
+          "args": ["--config=${workspaceFolder}/odoo.conf","-d","foxdata","-u","matrix_view"],
           "cwd": "${workspaceRoot}",
           "console": "internalConsole"
       }

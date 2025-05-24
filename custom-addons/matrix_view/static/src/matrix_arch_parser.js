@@ -12,6 +12,7 @@ export class MatrixArchParser {
             fieldAttrs: {},
             rowGroupBys: [], // store the defined group_by used on rows
             widgets: {}, // wigdets defined in the arch
+            colFields: [],
         };
 
         visitXML(arch, (node) => {
@@ -61,6 +62,7 @@ export class MatrixArchParser {
                     }
                     if (node.getAttribute("type") === "col") {
                         archInfo.colGroupBys.push(fieldName);
+                        archInfo.colFields.push(node.getAttribute("name"));
                     }
                     if (node.getAttribute("type") === "row") {
                         archInfo.rowGroupBys.push(fieldName);
@@ -69,10 +71,10 @@ export class MatrixArchParser {
                 }
             }
         });
-        if (!archInfo.rowGroupBys.includes("id")) {
+        /*if (!archInfo.rowGroupBys.includes("id")) {
             archInfo.rowGroupBys.push("id");
             archInfo.fieldAttrs["id"] = { isInvisible: true };
-        }
+        }*/
         return archInfo;
     }
 }

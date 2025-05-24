@@ -49,6 +49,7 @@ export const matrixView = {
                 rowGroupBys: archInfo.rowGroupBys,
                 title: archInfo.title || _t("Untitled"),
                 widgets: archInfo.widgets,
+                colFields: archInfo.colFields,
             };
         }
 
