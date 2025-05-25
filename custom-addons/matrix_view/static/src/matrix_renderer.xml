@@ -136,13 +136,13 @@
                                         <t t-if="getFieldType(fieldName) === 'date'">
                                             <input type="date" t-att-name="fieldName"
                                                 t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
-                                                t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id)"
+                                                t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
                                                 class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"/>
                                         </t>
                                         
                                         <t t-elif="getFieldType(fieldName) === 'selection'">
                                             <select class="form-select edit_mode o_list_selection" t-att-name="fieldName"
-                                                    t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id)" t-att-id="fieldName+'_'+record_line_id">
+                                                    t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)" t-att-id="fieldName+'_'+record_line_id">
                                                 <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
                                                     <option t-att-value="option[0]"
                                                             t-att-selected="option[0] === row.data[fieldName]?.value">
@@ -154,7 +154,7 @@
                                         <t t-else="">
                                             <input type="text" t-att-name="fieldName"
                                                 t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
-                                                t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id)"
+                                                t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
                                                 class="form-control edit_mode"/>
                                         </t>
                                     </t>
@@ -180,7 +180,7 @@
                                         <t t-if="cell.value">
                                             <input type="number"
                                                 t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index)"
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
                                                 class="form-control edit_mode"/>
                                         </t>
                                         <!--<t t-elif="!cell.id">
@@ -189,7 +189,7 @@
                                         <t t-else="">
                                             <!--<t t-esc="'-'"/>-->
                                             <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index)"/>
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
                                         </t>
 
                                     </t>
@@ -197,13 +197,13 @@
                                         <t t-if="cell.value">
                                             <input type="text"
                                                 t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index)"
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
                                                 class="form-control edit_mode"/>
                                         </t>
                                         
                                         <t t-else="">
                                             <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index)"/>
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
                                         </t>
                                     </t>
                                 </t>

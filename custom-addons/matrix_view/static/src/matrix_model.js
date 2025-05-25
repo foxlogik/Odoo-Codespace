@@ -162,7 +162,7 @@ export class MatrixModel extends Model {
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
         }
-
+        console.log("addLine",this.data.newRows)
         const columns = this._getLeafColumns(this.data.colGroupTree);
         const subGroupMeasurements = columns.map(column => ({
             groupId: [[], column.groupId[1]],
@@ -180,7 +180,7 @@ export class MatrixModel extends Model {
             isNew: true,
         };
         
-        this.data.newRows.unshift(newRow);
+        this.data.newRows.push(newRow);
         this.notify();
     }
 

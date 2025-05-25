@@ -84,6 +84,8 @@ export class MatrixRenderer extends Component {
         }
     }
     formatDate(value, fieldType) {
+        console.log("-------------------------formatDate----------")
+        console.log("value===",value,fieldType)
         if (!value) {
             return "";
         }
@@ -252,32 +254,32 @@ export class MatrixRenderer extends Component {
             const model = field.relation;
             let domain = [];
             const pattern = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])])";
-            if (field.domain) {
-                // Replace the pattern with the actual company_id
-                var fieldDomain=JSON.stringify(field.domain);
-                if (fieldDomain.includes(pattern)) {
-                    domain = companyId
-                                ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
-                                : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
-                    /*try {
+            // if (field.domain) {
+            //     // Replace the pattern with the actual company_id
+            //     var fieldDomain=JSON.stringify(field.domain);
+            //     if (fieldDomain.includes(pattern)) {
+            //         domain = companyId
+            //                     ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
+            //                     : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+            //         /*try {
                     
-                        var splitedDomain=fieldDomain.split('+');
+            //             var splitedDomain=fieldDomain.split('+');
                         
-                        if (splitedDomain.length > 1) {
-                            var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
-                            domain=[...companyDomain, ...additionalDomain];
-                        }
+            //             if (splitedDomain.length > 1) {
+            //                 var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
+            //                 domain=[...companyDomain, ...additionalDomain];
+            //             }
                     
                     
-                    } catch (error) {
-                        console.error("Invalid domain:", field.domain, error);
-                        domain=[]
-                    }*/
-                }
-                else{
-                    domain=new Domain(field.domain).toList();
-                }
-            }
+            //         } catch (error) {
+            //             console.error("Invalid domain:", field.domain, error);
+            //             domain=[]
+            //         }*/
+            //     }
+            //     else{
+            //         domain=new Domain(field.domain).toList();
+            //     }
+            // }
             
             const records = await this.orm.searchRead(model, domain, ["display_name"]);
             return records;
@@ -523,18 +525,22 @@ export class MatrixRenderer extends Component {
             firstInput.focus();
         }
     }
-    onFieldEdit(fieldname_id) {
-        /*if (!this.state.edits[rowId]) {
-            this.state.edits[rowId] = {};
-        }
-        this.state.edits[rowId][fieldName] = value;*/
+    onFieldEdit(fieldname_id,row,cell=null) {
+        
         const input = $('#'+fieldname_id);
         const value = input.val();
         input.attr('data-value', value);
-        console.log("fieldname_id",fieldname_id);
-        /*if (input.attr('type')=="date") {
-            input.val(this.formatDate(value, 'date'));
-        }*/
+        console.log("fieldname_id",fieldname_id,row,cell);
+        if (row.isNew){
+            if (cell){
+                cell.value=value
+            }
+            else {
+                //row.value=value;
+                let fieldName = fieldname_id.split('_')[0];
+                row.data[fieldName].value=value;
+            }
+        }
     }
     
     _getRecordIdsForRow(row) {
@@ -619,12 +625,19 @@ export class MatrixRenderer extends Component {
                 }
                 const tocreate = {};
                 if (cell.groupId !== undefined && cell.groupId !== null) {
+                    console.log("row==========>",row)
+                    console.log("row.isNew==========>",row.isNew)
                     if (row.isNew){
+                        const fieldName = cell.measure;
+                        const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
+                        if (new_value !== undefined && new_value !== null && new_value != 0){
+                            tocreate[fieldName] = new_value;
+                        }
                         var row_field_index=0
                         this.model.metaData.rowGroupBys.forEach(field => {
                             const fieldName = field.split(':')[0];
                             const fieldInfo = this.model.metaData.fields[fieldName];
-                            var gbys_new_value = $('#' + fieldName + '_' + row_field_index).attr('data-value');
+                            var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
                             if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
                                 gbys_new_value = this.formatDate(gbys_new_value, 'date');
                             }
@@ -811,6 +824,7 @@ export class MatrixRenderer extends Component {
                             });
                         }
                     }
+                    console.log("tocreate============>",tocreate,)
                     if (tocreate && Object.keys(tocreate).length > 0 && tocreate[cell.measure] !== undefined && tocreate[cell.measure] !== null && tocreate[cell.measure] != 0) {
                         tocreate['name'] = cell.name || '-';
                         creates.push(tocreate);
@@ -1002,13 +1016,20 @@ export class MatrixRenderer extends Component {
             this.model.metaData.rowGroupBys.forEach(field => {
                 const fieldName = field.split(':')[0];
                 this.state.edits[newRowId][fieldName] = null;
+                /*field.subGroupMeasurements.forEach(cell => {
+                    this.state.edits[newRowId][cell.measure] = null;
+                });*/
             });
         }
         this.render();
-        const firstInput = $('.edit_mode').first();
-        if (firstInput) {
-            firstInput.focus();
-        }
+        setTimeout(function(){
+            //const firstInput = $('.edit_mode').first();
+            const lastNewRow = this.model.data.newRows.length - 1;
+            const InputToFocus = $('tr[class="o_matrix_new_row"]').eq(lastNewRow).find('.edit_mode').first();
+            if (InputToFocus) {
+                InputToFocus.focus();
+            }
+        }.bind(this),100);
     }
 
     getDynamicColumns() {
