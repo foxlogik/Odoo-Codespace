@@ -981,7 +981,7 @@ export class MatrixRenderer extends Component {
                 $('.o_matrix_cancel').hide();
                 this.model.notify();
                 this.render();
-                //setTimeout(function(){ window.location.reload();},100);
+                setTimeout(function(){ window.location.reload();},100);
             } catch (error) {
                 console.error("Save error:", error);
                 this.notification.add(_t("Error saving changes"), { type: "danger" });

@@ -38,7 +38,7 @@
                                 t-att-name="cell.name" t-att-type="cell.type"
                                 t-att-index="cell_index" t-att-id="cell.fieldId||cell.title">
                                 <span t-esc="cell.title"/>
-                                <t t-if="cell_index==headerRow.length-1">
+                                <t t-if="cell_index==headerRow.length-1 and headerRow_index==1">
                                     <t t-if="state.isEditing">
                                         <i class="fa fa-plus-square me-1" data-tooltip="Add a column" title="" 
                                             style="margin-left:20px!important;" t-on-click="() => this.onAddColumnClicked(cell,cell_index,model)"/>
