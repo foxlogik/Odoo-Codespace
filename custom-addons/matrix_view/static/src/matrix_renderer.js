@@ -1101,18 +1101,47 @@ export class MatrixRenderer extends Component {
             </div>
             <div class="o_field_many2one_extra"></div>
         </div>`;
-        newTh.innerHTML = div_many2one;
+        /*newTh.innerHTML = div_many2one;
         th.insertAdjacentElement('afterend', newTh);
         const dropdownDiv = newTh.querySelector(`#div_${next_cell_index}_${cell.name}`);
         if (dropdownDiv) {
             dropdownDiv.addEventListener('click', (ev) => {
                 this.displayMany2oneRecord(ev, cell.name, next_cell_index, cell);
             });
-        }
+        }*/
         this.table.headers.forEach((headerRow, index) => {
-            if (index > 1) {
+            if (index > 0) {
                 console.log("headerRow===",headerRow,index);
-
+                const headerRow_th = document.querySelector(`th[name="${headerRow[0].name}"][index="${headerRow.length-1}"]`);
+                const headerRow_newTh = document.createElement('th');
+                headerRow_newTh.classList.add('new_col');
+                const next_headerRow_index=headerRow.length;
+                headerRow_newTh.setAttribute('name', '${headerRow[0].name}');
+                headerRow_newTh.setAttribute('index', '${next_headerRow_index}');
+                headerRow_newTh.setAttribute('colspan', '{headerRow_th.getAttribute("colspan")}');
+                headerRow_newTh.setAttribute('rowspan', '{headerRow_th.getAttribute("rowspan")}');
+                const headerRow_div_many2one = `
+                <div class="o_field_widget o_field_many2one" name="${headerRow[0].name}">
+                    <div class="o_field_many2one_selection">
+                    <div class="o_input_dropdown" id="div_${next_headerRow_index}_${headerRow[0].name}">
+                        <div class="o-autocomplete dropdown">
+                        <input type="text" class="o-autocomplete--input o_input edit_mode"
+                                autocomplete="off" placeholder=""
+                                style="margin-top:3px!important;height: 30px!important;" name="${headerRow[0].name}">
+                        </div>
+                        <span class="o_dropdown_button" style="top:13px!important;"></span>
+                    </div>
+                    </div>
+                    <div class="o_field_many2one_extra"></div>
+                </div>`;
+                headerRow_newTh.innerHTML = headerRow_div_many2one;
+                headerRow_th.insertAdjacentElement('afterend', headerRow_newTh);
+                const headerRowdropdownDiv = headerRow_newTh.querySelector(`#div_${next_headerRow_index}_${headerRow[0].name}`);
+                if (headerRowdropdownDiv) {
+                    headerRowdropdownDiv.addEventListener('click', (ev) => {
+                        this.displayMany2oneRecord(ev, headerRow[0].name, next_headerRow_index, headerRow);
+                    });
+                }
             }
         });
         //duplicate last measure header
