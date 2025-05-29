@@ -668,20 +668,23 @@ export class MatrixRenderer extends Component {
                         if (records.length > 1) {
                             // Handle multiple records
                             for (const rec of records) {
+                                //rec=records[0]
                                 const record_line_id = rec.id;
                                 edits[record_line_id] = {};
                                 const rec_value=rec[cell.measure];
                                 console.log("record_line_id",record_line_id,value,new_value,new_value_updated);
-                                if (new_value !== undefined && new_value !== null && new_value != 0) {
-                                    if (new_value < value && !new_value_updated) {
+                                if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
+                                    /*if (new_value < value && !new_value_updated) {
                                         edits[record_line_id][fieldName] = rec_value-(value - new_value);
                                         new_value_updated = true;
                                     } else if (new_value > value && !new_value_updated) {
                                         tocreate[fieldName] = new_value - value;
                                         new_value_updated = true;
-                                    }
+                                    }*/
+                                    tocreate[fieldName] = new_value - value;
+                                    new_value_updated = true;
+                                
                                 }
-
                                 this.model.metaData.rowGroupBys.forEach(field => {
                                     const fieldName = field.split(':')[0];
                                     var gbys_old_value = row.data[fieldName]?.value;
@@ -727,18 +730,20 @@ export class MatrixRenderer extends Component {
                                         });
                                     }
                                 });
-
-                                updates.push({
-                                    id: parseInt(record_line_id, 10),
-                                    changes: edits[record_line_id]
-                                });
+                                if (edits[record_line_id] && edits[record_line_id]!={}){
+                                    updates.push({
+                                        id: parseInt(record_line_id, 10),
+                                        changes: edits[record_line_id]
+                                    });
+                                }
+                                
                             }
                         } 
                         else if (records.length === 1) {
                             // Handle single record
                             const record_line_id = records[0].id;
                             edits[record_line_id] = {};
-                            if (new_value !== undefined && new_value !== null && new_value != 0) {
+                            if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
                                 edits[record_line_id][fieldName] = new_value;
                                 new_value_updated = true;
                             }
@@ -788,13 +793,14 @@ export class MatrixRenderer extends Component {
                                     
                                 }
                             });
-
-                            updates.push({
-                                id: parseInt(record_line_id, 10),
-                                changes: edits[record_line_id]
-                            });
+                            if (edits[record_line_id] && edits[record_line_id]!={}){
+                                updates.push({
+                                    id: parseInt(record_line_id, 10),
+                                    changes: edits[record_line_id]
+                                });
+                            }
                         }
-                        else if (new_value !== undefined && new_value !== null && new_value != 0) {
+                        else if (new_value !== undefined && new_value !== null && new_value != 0 && new_value != '') {
                             // Handle new record
                             tocreate[fieldName] = new_value;
                             
@@ -833,9 +839,58 @@ export class MatrixRenderer extends Component {
                 }
                 cell_index++;
             }
+            //const new_col_measure=$('tbody').find('.new_col').eq(row_index).find('input');
+            //console.log(row_index,new_col_measure,new_col_measure.val())
+            let new_col_index=0;
+            var self=this;
+            $('tbody').find('tr').eq(row_index).find('.new_col').each(function(){
+                console.log("new_measure======>",this.firstChild,$(this))
+                const firstchild=$(this.firstChild);
+                const firstchild_id=firstchild.attr('id');
+                console.log("firstchild_id====",firstchild_id)
+                const firstchild_id_split=firstchild_id.split('_');
+                const firstchild_measure=firstchild_id_split[1];
+                console.log(firstchild_measure)
+                const firstchild_position=firstchild_id_split[3];
+                const firstchid_value=firstchild.val();
+                console.log("firstchid_value======",firstchid_value)
+                const newcol_cell=row.subGroupMeasurements[0]
+                if (firstchid_value!==null && firstchid_value!==undefined && firstchid_value!==0 && firstchid_value!=''){
+                    let newcol_tocreate={'name':'-'};
+                    newcol_tocreate[firstchild_measure]=firstchid_value;
+                    let newcol_row_index=0;
+                    self.model.metaData.rowGroupBys.forEach(field => {
+                        const fieldName = field.split(':')[0];
+                        console.log(fieldName,row_index)
+                        const fieldInfo = self.model.metaData.fields[fieldName];
+                        //var gbys_new_value = $("#"+fieldName+"_"+row_index);
+                        var gbys_new_value=newcol_cell.groupId[0][newcol_row_index];
+                        if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
+                            gbys_new_value = self.formatDate(gbys_new_value, 'date');
+                        }
+                        
+                        newcol_tocreate[fieldName] = gbys_new_value;
+                        newcol_row_index++;
+                    });
+                    self.model.metaData.colGroupBys.forEach(colfield => {
+                        const colfieldName = colfield.split(':')[0];
+                        const colfieldInfo = self.model.metaData.fields[colfieldName];
+                        console.log("colfieldName",colfieldName,firstchild_position)
+                        var col_old_value = $('#newcol_'+colfieldName+'_'+firstchild_position).attr('data-value');
+                        console.log("col_old_value===",col_old_value)
+                        if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
+                            col_old_value = self.formatDate(col_old_value, 'date');
+                        }
+                        
+                        newcol_tocreate[colfieldName] = col_old_value;
+                    });
+                    creates.push(newcol_tocreate)
+                }
+                
+
+            });
             row_index++;
         }
-        
         
         setTimeout(async function() {
             this.state.edits = edits;
@@ -850,105 +905,7 @@ export class MatrixRenderer extends Component {
                     [],
                     { attributes: ['string', 'type', 'required'] }
                 );
-                /*this.model.data.newRows?.forEach(newRow => {
-                    console.log("newRow",newRow,newRow.subGroupMeasurements);
-                    if (newRow.id && newRow.id.startsWith('new_')) {
-                        newRow.subGroupMeasurements.forEach(cell => {
-                            console.log("cell======",cell);
-                            
-                            if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
-                                const recordData = {};
-                                
-                                Object.entries(newRow.data).forEach(([fieldName, fieldData]) => {
-                                    let value = fieldData?.value;
-                                    
-                                    // Gérer les champs obligatoires vides
-                                    if ((value === null || value === undefined || value === '') && 
-                                        modelFields[fieldName]?.required) {
-                                        value = this.getDefaultValueForField(modelFields[fieldName].type);
-                                    }
-                                    
-                                    recordData[fieldName] = value;
-                                });
-                                
-                                // Ajouter la mesure
-                                recordData[cell.measure] = parseFloat(cell.value) || 0;
-                                
-                                // Vérifier que tous les champs obligatoires sont remplis
-                                const missingRequiredFields = Object.entries(modelFields)
-                                    .filter(([name, field]) => field.required && !recordData[name])
-                                    .map(([name]) => name);
-                                
-                                if (missingRequiredFields.length === 0) {
-                                    creates.push(recordData);
-                                } else {
-                                    console.warn(`Missing required fields: ${missingRequiredFields.join(', ')}`);
-                                    this.notification.add(
-                                        _t("Missing required fields: %s", missingRequiredFields.join(', ')), 
-                                        { type: "warning" }
-                                    );
-                                }
-                            }
-                        });
-                    }
-                });*/
-                /*$('.o_matrix_new_row').each((index, row) => {
-                    console.log("o_matrix_new_row",row,index);
-
-                });*/
-
-                /*Object.entries(edits).forEach(([rowId, changes]) => {
-                    if (!rowId.startsWith('new_')) {
-                        const cleanChanges = {};
-                        Object.entries(changes).forEach(([field, value]) => {
-                            const fieldInfo = this.model.metaData.fields[field];
-                            
-                            if (fieldInfo && fieldInfo.type === 'many2one') {
-                                // Many2one conversion
-                                var field_id=$('#'+field+'_'+rowId).attr('data-value');
-                                value = value || parseInt(field_id);
-                                cleanChanges[field] = value;
-                            } 
-                            else if (fieldInfo && fieldInfo.type === 'selection') {
-                                // Selection conversion
-                                const selection = this.getSelectionOptions(field);  
-                                const selectedOption = selection.find(option => option[0] === value);
-                                if (selectedOption) {
-                                    cleanChanges[field] = selectedOption[0];
-                                }   
-                            
-                            } else if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                
-                                // Conversion date/datetime
-                                
-                                var field_date=$('#'+field+'_'+rowId).attr('data-value');
-                                if (field_date) {
-                                    value = field_date;
-                                }else {
-                                    value = this.formatDate(value);
-                                }
-                                if (value) {
-                                    const dateObj = new Date(value);
-                                    const pad = n => String(n).padStart(2, '0');
-                                    if (fieldInfo.type === 'datetime') {
-                                        cleanChanges[field] = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
-                                    } else {
-                                        cleanChanges[field] = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
-                                    }
-                                } else {
-                                    cleanChanges[field] = false;
-                                }
-                            } else {
-                                
-                                cleanChanges[field] = value;
-                            }
-                        });
-                        updates.push({
-                            id: parseInt(rowId, 10),
-                            changes: cleanChanges
-                        });
-                    }
-                });*/
+                
                 console.log("------creates-------", creates);
                 console.log("---------updates---------", updates);
                 if (creates.length) {
@@ -1015,6 +972,7 @@ export class MatrixRenderer extends Component {
             this.state.edits[newRowId] = {};
             this.model.metaData.rowGroupBys.forEach(field => {
                 const fieldName = field.split(':')[0];
+                console.log("default value",this.model.metaData.fields[fieldName].default)
                 this.state.edits[newRowId][fieldName] = null;
                 /*field.subGroupMeasurements.forEach(cell => {
                     this.state.edits[newRowId][cell.measure] = null;
@@ -1080,9 +1038,10 @@ export class MatrixRenderer extends Component {
     async onAddColumnClicked(cell,cell_index,model) {
         console.log("onAddColumnClicked", cell,cell_index,model);
         const th = document.querySelector(`th[name="${cell.name}"][index="${cell_index}"]`);
+        var count_new_col = th.closest('tr').querySelectorAll('th.new_col').length || 0;
         const newTh = document.createElement('th');
         newTh.classList.add('new_col');
-        const next_cell_index=cell_index+1;
+        const next_cell_index=cell_index+1+count_new_col;
         newTh.setAttribute('name', '${cell.name}');
         newTh.setAttribute('index', '${next_cell_index}');
         newTh.setAttribute('colspan', '{th.getAttribute("colspan")}');
@@ -1125,8 +1084,8 @@ export class MatrixRenderer extends Component {
                     <div class="o_field_many2one_selection">
                     <div class="o_input_dropdown" id="div_${next_headerRow_index}_${headerRow[0].name}">
                         <div class="o-autocomplete dropdown">
-                        <input type="text" class="o-autocomplete--input o_input edit_mode"
-                                autocomplete="off" placeholder=""
+                            <input type="text" class="o-autocomplete--input o_input edit_mode"
+                                autocomplete="off" placeholder="" id="${'newcol_'+headerRow[0].name+'_'+next_cell_index}"
                                 style="margin-top:3px!important;height: 30px!important;" name="${headerRow[0].name}">
                         </div>
                         <span class="o_dropdown_button" style="top:13px!important;"></span>
@@ -1151,21 +1110,39 @@ export class MatrixRenderer extends Component {
         const lastTh = lastHeaderRow.querySelector('th:last-of-type');
         const newMeasureTh = lastTh.cloneNode(true);
         newMeasureTh.classList.add('new_col');
-        lastHeaderRow.appendChild(newMeasureTh);
+        //lastHeaderRow.appendChild(newMeasureTh);
+        lastTh.insertAdjacentElement('afterend', newMeasureTh);
 
         const rows = document.querySelectorAll('table tbody tr');
-
+        let row_index=0;
+        //let len_rows=this.table.rows.length-1;
         rows.forEach((row) => {
-            const lastTd = row.querySelector('td:last-of-type');
+            let measure_name = this.table.rows[0].subGroupMeasurements[0].measure;
+            var rowgroupbys_length=this.model.metaData.rowGroupBys.length;
+            console.log("row=====",row)
+            const $row = $(`#${measure_name}_${row_index}_0`).closest('tr');
+            const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length;
+            const inputId = `${measure_name}_${row_index}_${len_row}`;
 
-            if (lastTd) {
-                const newTd = lastTd.cloneNode(true);
-                newTd.innerHTML = `<input type="number" class="form-control edit_mode">`;
-                //const inputs = newTd.querySelectorAll('input');
-                //inputs.forEach(input => input.value = '');
-                newTd.classList.add('new_col');
-                row.appendChild(newTd);
+            // Find the element with jQuery (proper scoping if needed)
+            const $input = $(`#${inputId}`);
+
+            if ($input.length) {  // Check if element exists
+                const $lastTd = $input.parent();
+                
+                // Create new TD with jQuery
+                const $newTd = $lastTd.clone(true);
+                $newTd.empty();
+                $newTd.addClass('new_col');
+                $newTd.html(`<input type="number" class="form-control edit_mode" id="newcol_${measure_name}_${row_index}_${next_cell_index}">`);
+                console.log("$lastTd======",$lastTd);
+                console.log("$newTd=======",$newTd);
+                // Insert after the original TD
+                $lastTd.after($newTd);
+            } else {
+                console.error(`Element with ID ${inputId} not found`);
             }
+            row_index++;
         });
     }
     async onHeaderClick(columnKey) {
@@ -1333,4 +1310,5 @@ MatrixRenderer.props = ["model", "buttonTemplate?"];
 MatrixRenderer.defaultProps = {
     buttonTemplate: "matrix_view.MatrixView.Buttons",
 };
+
 
