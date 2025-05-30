@@ -1250,7 +1250,8 @@ export class MatrixModel extends Model {
                     id : group.id,
                     data: {...currentRow}, // Copy all accumulated row data
                     groupId: [group.values, []],
-                    subGroupMeasurements: []
+                    subGroupMeasurements: [],
+                    edited: false,
                 };
                 
                 // Add measurements for each column

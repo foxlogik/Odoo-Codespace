@@ -541,6 +541,7 @@ export class MatrixRenderer extends Component {
                 row.data[fieldName].value=value;
             }
         }
+        row.edited = true;
     }
     
     _getRecordIdsForRow(row) {
@@ -619,72 +620,136 @@ export class MatrixRenderer extends Component {
 
         for (const row of this.table.rows) {
             let cell_index = 0;
-            for (const cell of row.subGroupMeasurements) {
-                if (! cell.value){
-                    console.log("cell.value is null or undefined",cell,row);
-                }
-                const tocreate = {};
-                if (cell.groupId !== undefined && cell.groupId !== null) {
-                    console.log("row==========>",row)
-                    console.log("row.isNew==========>",row.isNew)
-                    if (row.isNew){
-                        const fieldName = cell.measure;
-                        const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
-                        if (new_value !== undefined && new_value !== null && new_value != 0){
-                            tocreate[fieldName] = new_value;
-                        }
-                        var row_field_index=0
-                        this.model.metaData.rowGroupBys.forEach(field => {
-                            const fieldName = field.split(':')[0];
-                            const fieldInfo = this.model.metaData.fields[fieldName];
-                            var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
-                            if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                gbys_new_value = this.formatDate(gbys_new_value, 'date');
-                            }
-                            
-                            tocreate[fieldName] = gbys_new_value;
-                            row_field_index++;
-                        });
-                        var colfield_index=0
-                        this.model.metaData.colGroupBys.forEach(colfield => {
-                            const colfieldName = colfield.split(':')[0];
-                            const colfieldInfo = this.model.metaData.fields[colfieldName];
-                            var col_old_value = cell.groupId[1][colfield_index];
-                            if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                col_old_value = this.formatDate(col_old_value, 'date');
-                            }
-                            
-                            tocreate[colfieldName] = col_old_value;
-                            colfield_index++;
-                        });
+            if (row.edited){
+                for (const cell of row.subGroupMeasurements) {
+                    if (! cell.value){
+                        console.log("cell.value is null or undefined",cell,row);
                     }
-                    else{
-                        const records = await this._getRecordDataForCell(cell.groupId,cell.measure) || [];
-                        const fieldName = cell.measure;
-                        const value = cell.value;
-                        const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
-                        let new_value_updated = false;
-                        console.log("records",records,records.length);
-                        if (records.length > 1) {
-                            // Handle multiple records
-                            for (const rec of records) {
-                                //rec=records[0]
-                                const record_line_id = rec.id;
-                                edits[record_line_id] = {};
-                                const rec_value=rec[cell.measure];
-                                console.log("record_line_id",record_line_id,value,new_value,new_value_updated);
-                                if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
-                                    /*if (new_value < value && !new_value_updated) {
-                                        edits[record_line_id][fieldName] = rec_value-(value - new_value);
-                                        new_value_updated = true;
-                                    } else if (new_value > value && !new_value_updated) {
+                    const tocreate = {};
+                    if (cell.groupId !== undefined && cell.groupId !== null) {
+                        console.log("row==========>",row)
+                        console.log("row.isNew==========>",row.isNew)
+                        if (row.isNew){
+                            const fieldName = cell.measure;
+                            const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
+                            if (new_value !== undefined && new_value !== null && new_value != 0){
+                                tocreate[fieldName] = new_value;
+                            }
+                            var row_field_index=0
+                            this.model.metaData.rowGroupBys.forEach(field => {
+                                const fieldName = field.split(':')[0];
+                                const fieldInfo = this.model.metaData.fields[fieldName];
+                                var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
+                                if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
+                                    gbys_new_value = this.formatDate(gbys_new_value, 'date');
+                                }
+                                
+                                tocreate[fieldName] = gbys_new_value;
+                                row_field_index++;
+                            });
+                            var colfield_index=0
+                            this.model.metaData.colGroupBys.forEach(colfield => {
+                                const colfieldName = colfield.split(':')[0];
+                                const colfieldInfo = this.model.metaData.fields[colfieldName];
+                                var col_old_value = cell.groupId[1][colfield_index];
+                                if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
+                                    col_old_value = this.formatDate(col_old_value, 'date');
+                                }
+                                
+                                tocreate[colfieldName] = col_old_value;
+                                colfield_index++;
+                            });
+                        }
+                        else{
+                            const records = await this._getRecordDataForCell(cell.groupId,cell.measure) || [];
+                            const fieldName = cell.measure;
+                            const value = cell.value;
+                            const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
+                            let new_value_updated = false;
+                            console.log("records",records,records.length);
+                            if (records.length > 1) {
+                                // Handle multiple records
+                                for (const rec of records) {
+                                    //rec=records[0]
+                                    const record_line_id = rec.id;
+                                    edits[record_line_id] = {};
+                                    const rec_value=rec[cell.measure];
+                                    console.log("record_line_id",record_line_id,value,new_value,new_value_updated);
+                                    if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
+                                        /*if (new_value < value && !new_value_updated) {
+                                            edits[record_line_id][fieldName] = rec_value-(value - new_value);
+                                            new_value_updated = true;
+                                        } else if (new_value > value && !new_value_updated) {
+                                            tocreate[fieldName] = new_value - value;
+                                            new_value_updated = true;
+                                        }*/
                                         tocreate[fieldName] = new_value - value;
                                         new_value_updated = true;
-                                    }*/
-                                    tocreate[fieldName] = new_value - value;
-                                    new_value_updated = true;
-                                
+                                    
+                                    }
+                                    this.model.metaData.rowGroupBys.forEach(field => {
+                                        const fieldName = field.split(':')[0];
+                                        var gbys_old_value = row.data[fieldName]?.value;
+                                        var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
+                                        const fieldInfo = this.model.metaData.fields[fieldName];
+                                        if (gbys_old_value !== gbys_new_value && gbys_new_value !== undefined && gbys_new_value !== null) {
+                                            if (fieldInfo && fieldInfo.type === 'date') {
+                                                gbys_new_value = this.formatDate(gbys_new_value, 'date');
+                                                gbys_old_value = this.formatDate(gbys_old_value, 'date');
+                                            }
+                                            else if (fieldInfo && fieldInfo.type === 'many2one') {
+                                                gbys_new_value = parseInt(gbys_new_value);
+                                                console.log("gbys_new_value",gbys_new_value);
+                                                console.log("gbys_old_value",gbys_old_value);
+                                            }
+                                            edits[record_line_id][fieldName] = gbys_new_value;
+                                        }
+                                        if (tocreate) {
+                                            if (fieldInfo && fieldInfo.type === 'date') {
+                                                gbys_new_value = this.formatDate(gbys_new_value, 'date');
+                                                gbys_old_value = this.formatDate(gbys_old_value, 'date');
+                                            }
+                                            else if (fieldInfo && fieldInfo.type === 'many2one') {
+                                                gbys_new_value = parseInt(gbys_new_value);
+                                                console.log("gbys_new_value",gbys_new_value);
+                                                console.log("gbys_old_value",gbys_old_value);
+                                            }
+                                            const tocreate_value=gbys_new_value? gbys_new_value : gbys_old_value;
+                                            console.log("tocreate_value",tocreate_value);
+                                            tocreate[fieldName] = tocreate_value;
+                                            this.model.metaData.colGroupBys.forEach(colfield => {
+                                                const colfieldName = colfield.split(':')[0];
+                                                const colfieldInfo = this.model.metaData.fields[colfieldName];
+                                                var col_old_value = rec[colfieldName];
+                                                if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
+                                                    col_old_value = this.formatDate(col_old_value, 'date');
+                                                }
+                                                else if (colfieldInfo.type === 'many2one') {
+                                                    col_old_value = rec[colfieldName][0];
+                                                }
+                                                
+                                                tocreate[colfieldName] = col_old_value;
+                                            });
+                                        }
+                                    });
+                                    if (edits[record_line_id] && Object.keys(edits[record_line_id]).length > 0){
+                                        updates.push({
+                                            id: parseInt(record_line_id, 10),
+                                            changes: edits[record_line_id]
+                                        });
+                                    }
+                                    
                                 }
+                            } 
+                            else if (records.length === 1) {
+                                // Handle single record
+                                const record_line_id = records[0].id;
+                                edits[record_line_id] = {};
+                                if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
+                                    edits[record_line_id][fieldName] = new_value;
+                                    new_value_updated = true;
+                                }
+
                                 this.model.metaData.rowGroupBys.forEach(field => {
                                     const fieldName = field.split(':')[0];
                                     var gbys_old_value = row.data[fieldName]?.value;
@@ -714,20 +779,20 @@ export class MatrixRenderer extends Component {
                                         }
                                         const tocreate_value=gbys_new_value? gbys_new_value : gbys_old_value;
                                         console.log("tocreate_value",tocreate_value);
-                                        tocreate[fieldName] = tocreate_value;
+
                                         this.model.metaData.colGroupBys.forEach(colfield => {
                                             const colfieldName = colfield.split(':')[0];
                                             const colfieldInfo = this.model.metaData.fields[colfieldName];
-                                            var col_old_value = rec[colfieldName];
+                                            var col_old_value = records[0][colfieldName];
                                             if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
                                                 col_old_value = this.formatDate(col_old_value, 'date');
                                             }
                                             else if (colfieldInfo.type === 'many2one') {
-                                                col_old_value = rec[colfieldName][0];
+                                                col_old_value = records[0][colfieldName][0];
                                             }
-                                            
                                             tocreate[colfieldName] = col_old_value;
                                         });
+                                        
                                     }
                                 });
                                 if (edits[record_line_id] && edits[record_line_id]!={}){
@@ -736,108 +801,46 @@ export class MatrixRenderer extends Component {
                                         changes: edits[record_line_id]
                                     });
                                 }
+                            }
+                            else if (new_value !== undefined && new_value !== null && new_value != 0 && new_value != '') {
+                                // Handle new record
+                                tocreate[fieldName] = new_value;
                                 
-                            }
-                        } 
-                        else if (records.length === 1) {
-                            // Handle single record
-                            const record_line_id = records[0].id;
-                            edits[record_line_id] = {};
-                            if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
-                                edits[record_line_id][fieldName] = new_value;
-                                new_value_updated = true;
-                            }
-
-                            this.model.metaData.rowGroupBys.forEach(field => {
-                                const fieldName = field.split(':')[0];
-                                var gbys_old_value = row.data[fieldName]?.value;
-                                var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
-                                const fieldInfo = this.model.metaData.fields[fieldName];
-                                if (gbys_old_value !== gbys_new_value && gbys_new_value !== undefined && gbys_new_value !== null) {
-                                    if (fieldInfo && fieldInfo.type === 'date') {
+                                var row_field_index=0
+                                this.model.metaData.rowGroupBys.forEach(field => {
+                                    const fieldName = field.split(':')[0];
+                                    const fieldInfo = this.model.metaData.fields[fieldName];
+                                    var gbys_new_value = cell.groupId[0][row_field_index];
+                                    if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
                                         gbys_new_value = this.formatDate(gbys_new_value, 'date');
-                                        gbys_old_value = this.formatDate(gbys_old_value, 'date');
                                     }
-                                    else if (fieldInfo && fieldInfo.type === 'many2one') {
-                                        gbys_new_value = parseInt(gbys_new_value);
-                                        console.log("gbys_new_value",gbys_new_value);
-                                        console.log("gbys_old_value",gbys_old_value);
-                                    }
-                                    edits[record_line_id][fieldName] = gbys_new_value;
-                                }
-                                if (tocreate) {
-                                    if (fieldInfo && fieldInfo.type === 'date') {
-                                        gbys_new_value = this.formatDate(gbys_new_value, 'date');
-                                        gbys_old_value = this.formatDate(gbys_old_value, 'date');
-                                    }
-                                    else if (fieldInfo && fieldInfo.type === 'many2one') {
-                                        gbys_new_value = parseInt(gbys_new_value);
-                                        console.log("gbys_new_value",gbys_new_value);
-                                        console.log("gbys_old_value",gbys_old_value);
-                                    }
-                                    const tocreate_value=gbys_new_value? gbys_new_value : gbys_old_value;
-                                    console.log("tocreate_value",tocreate_value);
-
-                                    this.model.metaData.colGroupBys.forEach(colfield => {
-                                        const colfieldName = colfield.split(':')[0];
-                                        const colfieldInfo = this.model.metaData.fields[colfieldName];
-                                        var col_old_value = records[0][colfieldName];
-                                        if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                            col_old_value = this.formatDate(col_old_value, 'date');
-                                        }
-                                        else if (colfieldInfo.type === 'many2one') {
-                                            col_old_value = records[0][colfieldName][0];
-                                        }
-                                        tocreate[colfieldName] = col_old_value;
-                                    });
                                     
-                                }
-                            });
-                            if (edits[record_line_id] && edits[record_line_id]!={}){
-                                updates.push({
-                                    id: parseInt(record_line_id, 10),
-                                    changes: edits[record_line_id]
+                                    tocreate[fieldName] = gbys_new_value;
+                                    row_field_index++;
+                                });
+                                var colfield_index=0
+                                this.model.metaData.colGroupBys.forEach(colfield => {
+                                    const colfieldName = colfield.split(':')[0];
+                                    const colfieldInfo = this.model.metaData.fields[colfieldName];
+                                    var col_old_value = cell.groupId[1][colfield_index];
+                                    if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
+                                        col_old_value = this.formatDate(col_old_value, 'date');
+                                    }
+                                    
+                                    tocreate[colfieldName] = col_old_value;
+                                    colfield_index++;
                                 });
                             }
                         }
-                        else if (new_value !== undefined && new_value !== null && new_value != 0 && new_value != '') {
-                            // Handle new record
-                            tocreate[fieldName] = new_value;
-                            
-                            var row_field_index=0
-                            this.model.metaData.rowGroupBys.forEach(field => {
-                                const fieldName = field.split(':')[0];
-                                const fieldInfo = this.model.metaData.fields[fieldName];
-                                var gbys_new_value = cell.groupId[0][row_field_index];
-                                if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                    gbys_new_value = this.formatDate(gbys_new_value, 'date');
-                                }
-                                
-                                tocreate[fieldName] = gbys_new_value;
-                                row_field_index++;
-                            });
-                            var colfield_index=0
-                            this.model.metaData.colGroupBys.forEach(colfield => {
-                                const colfieldName = colfield.split(':')[0];
-                                const colfieldInfo = this.model.metaData.fields[colfieldName];
-                                var col_old_value = cell.groupId[1][colfield_index];
-                                if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                    col_old_value = this.formatDate(col_old_value, 'date');
-                                }
-                                
-                                tocreate[colfieldName] = col_old_value;
-                                colfield_index++;
-                            });
+                        console.log("tocreate============>",tocreate,)
+                        if (tocreate && Object.keys(tocreate).length > 0 && tocreate[cell.measure] !== undefined && tocreate[cell.measure] !== null && tocreate[cell.measure] != 0) {
+                            tocreate['name'] = cell.name || '-';
+                            creates.push(tocreate);
                         }
+                        
                     }
-                    console.log("tocreate============>",tocreate,)
-                    if (tocreate && Object.keys(tocreate).length > 0 && tocreate[cell.measure] !== undefined && tocreate[cell.measure] !== null && tocreate[cell.measure] != 0) {
-                        tocreate['name'] = cell.name || '-';
-                        creates.push(tocreate);
-                    }
-                    
+                    cell_index++;
                 }
-                cell_index++;
             }
             //const new_col_measure=$('tbody').find('.new_col').eq(row_index).find('input');
             //console.log(row_index,new_col_measure,new_col_measure.val())
