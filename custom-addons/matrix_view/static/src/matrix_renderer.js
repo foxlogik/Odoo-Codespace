@@ -84,8 +84,6 @@ export class MatrixRenderer extends Component {
         }
     }
     formatDate(value, fieldType) {
-        console.log("-------------------------formatDate----------")
-        console.log("value===",value,fieldType)
         if (!value) {
             return "";
         }
@@ -483,6 +481,7 @@ export class MatrixRenderer extends Component {
         if (row.data){
             (row.data)[fieldName] = { id: option.id, label: option.display_name };
         }
+        row.edited = true;
         // Remove the dropdown menu
         $menu.remove();
         
@@ -563,13 +562,10 @@ export class MatrixRenderer extends Component {
     }
     //Save Button to save the modified datas and render the readonly mode
     
-    async _getRecordDataForCell(groupId,cell_field) {
+    /*async _getRecordDataForCell(groupId,cell_field) {
         const domain = [];
         // Add row group filters
-        console.log("groupId",groupId);
         this.model.metaData.rowGroupBys.forEach((groupBy, index) => {
-            console.log("groupBy",groupBy);
-            console.log("groupId[0][index]",groupId[0][index]);
             const fieldName = groupBy.split(':')[0];
             var value = groupId[0][index];
             const fieldInfo = this.model.metaData.fields[fieldName]
@@ -584,7 +580,6 @@ export class MatrixRenderer extends Component {
         
         // Add column group filters
         this.model.metaData.colGroupBys.forEach((groupBy, index) => {
-            console.log("groupId[1][index]",groupId[1][index]);
             const fieldName = groupBy.split(':')[0];
             var value = groupId[1][index];
             const fieldInfo = this.model.metaData.fields[fieldName]
@@ -596,7 +591,6 @@ export class MatrixRenderer extends Component {
         
         
         if (domain.length === 0) return [];
-        console.log("domain========>",domain);
         //return this.orm.search(this.model.metaData.resModel, domain, { limit: 1000 }).then((recordIds) => {return recordIds;});
         const allFields = [
             'id',cell_field,
@@ -611,7 +605,38 @@ export class MatrixRenderer extends Component {
 
         return records;
         
+    }*/
+    async _getRecordDataForCell(groupId, cell_field) {
+        const domain = [];
+
+        const formatGroup = (groupBys, groupValues) => {
+            return groupBys.map((groupBy, index) => {
+                const fieldName = groupBy.split(':')[0];
+                let value = groupValues[index];
+                const fieldInfo = this.model.metaData.fields[fieldName];
+                if (fieldInfo && fieldInfo.type === 'date') {
+                    value = this.formatDate(value, 'date');
+                }
+                return [fieldName, '=', value];
+            });
+        };
+
+        domain.push(...formatGroup(this.model.metaData.rowGroupBys, groupId[0]));
+        domain.push(...formatGroup(this.model.metaData.colGroupBys, groupId[1]));
+
+        if (!domain.length) return [];
+
+        const allFields = new Set([
+            'id',
+            cell_field,
+            ...this.model.metaData.rowGroupBys.map(f => f.split(':')[0]),
+            ...this.model.metaData.colGroupBys.map(f => f.split(':')[0]),
+        ]);
+
+        const records = await this.orm.searchRead(this.model.metaData.resModel, domain,[...allFields]);
+        return records;
     }
+
     async onSaveButtonClicked() {
         const edits = {};
         const creates = [];
@@ -620,6 +645,8 @@ export class MatrixRenderer extends Component {
 
         for (const row of this.table.rows) {
             let cell_index = 0;
+            console.log("row",row);
+            console.log("row edited",row.edited);
             if (row.edited){
                 for (const cell of row.subGroupMeasurements) {
                     if (! cell.value){
@@ -627,8 +654,6 @@ export class MatrixRenderer extends Component {
                     }
                     const tocreate = {};
                     if (cell.groupId !== undefined && cell.groupId !== null) {
-                        console.log("row==========>",row)
-                        console.log("row.isNew==========>",row.isNew)
                         if (row.isNew){
                             const fieldName = cell.measure;
                             const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
@@ -666,7 +691,6 @@ export class MatrixRenderer extends Component {
                             const value = cell.value;
                             const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
                             let new_value_updated = false;
-                            console.log("records",records,records.length);
                             if (records.length > 1) {
                                 // Handle multiple records
                                 for (const rec of records) {
@@ -674,7 +698,6 @@ export class MatrixRenderer extends Component {
                                     const record_line_id = rec.id;
                                     edits[record_line_id] = {};
                                     const rec_value=rec[cell.measure];
-                                    console.log("record_line_id",record_line_id,value,new_value,new_value_updated);
                                     if (new_value !== undefined && new_value !== null && new_value != 0 && new_value!=value) {
                                         /*if (new_value < value && !new_value_updated) {
                                             edits[record_line_id][fieldName] = rec_value-(value - new_value);
@@ -699,8 +722,6 @@ export class MatrixRenderer extends Component {
                                             }
                                             else if (fieldInfo && fieldInfo.type === 'many2one') {
                                                 gbys_new_value = parseInt(gbys_new_value);
-                                                console.log("gbys_new_value",gbys_new_value);
-                                                console.log("gbys_old_value",gbys_old_value);
                                             }
                                             edits[record_line_id][fieldName] = gbys_new_value;
                                         }
@@ -711,11 +732,8 @@ export class MatrixRenderer extends Component {
                                             }
                                             else if (fieldInfo && fieldInfo.type === 'many2one') {
                                                 gbys_new_value = parseInt(gbys_new_value);
-                                                console.log("gbys_new_value",gbys_new_value);
-                                                console.log("gbys_old_value",gbys_old_value);
                                             }
                                             const tocreate_value=gbys_new_value? gbys_new_value : gbys_old_value;
-                                            console.log("tocreate_value",tocreate_value);
                                             tocreate[fieldName] = tocreate_value;
                                             this.model.metaData.colGroupBys.forEach(colfield => {
                                                 const colfieldName = colfield.split(':')[0];
@@ -754,6 +772,8 @@ export class MatrixRenderer extends Component {
                                     const fieldName = field.split(':')[0];
                                     var gbys_old_value = row.data[fieldName]?.value;
                                     var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
+                                    console.log("gbys_new_value",gbys_new_value);
+                                    console.log("gbys_old_value",gbys_old_value);
                                     const fieldInfo = this.model.metaData.fields[fieldName];
                                     if (gbys_old_value !== gbys_new_value && gbys_new_value !== undefined && gbys_new_value !== null) {
                                         if (fieldInfo && fieldInfo.type === 'date') {
@@ -762,8 +782,6 @@ export class MatrixRenderer extends Component {
                                         }
                                         else if (fieldInfo && fieldInfo.type === 'many2one') {
                                             gbys_new_value = parseInt(gbys_new_value);
-                                            console.log("gbys_new_value",gbys_new_value);
-                                            console.log("gbys_old_value",gbys_old_value);
                                         }
                                         edits[record_line_id][fieldName] = gbys_new_value;
                                     }
@@ -774,11 +792,8 @@ export class MatrixRenderer extends Component {
                                         }
                                         else if (fieldInfo && fieldInfo.type === 'many2one') {
                                             gbys_new_value = parseInt(gbys_new_value);
-                                            console.log("gbys_new_value",gbys_new_value);
-                                            console.log("gbys_old_value",gbys_old_value);
                                         }
                                         const tocreate_value=gbys_new_value? gbys_new_value : gbys_old_value;
-                                        console.log("tocreate_value",tocreate_value);
 
                                         this.model.metaData.colGroupBys.forEach(colfield => {
                                             const colfieldName = colfield.split(':')[0];
@@ -842,21 +857,15 @@ export class MatrixRenderer extends Component {
                     cell_index++;
                 }
             }
-            //const new_col_measure=$('tbody').find('.new_col').eq(row_index).find('input');
-            //console.log(row_index,new_col_measure,new_col_measure.val())
             let new_col_index=0;
             var self=this;
             $('tbody').find('tr').eq(row_index).find('.new_col').each(function(){
-                console.log("new_measure======>",this.firstChild,$(this))
                 const firstchild=$(this.firstChild);
                 const firstchild_id=firstchild.attr('id');
-                console.log("firstchild_id====",firstchild_id)
                 const firstchild_id_split=firstchild_id.split('_');
                 const firstchild_measure=firstchild_id_split[1];
-                console.log(firstchild_measure)
                 const firstchild_position=firstchild_id_split[3];
                 const firstchid_value=firstchild.val();
-                console.log("firstchid_value======",firstchid_value)
                 const newcol_cell=row.subGroupMeasurements[0]
                 if (firstchid_value!==null && firstchid_value!==undefined && firstchid_value!==0 && firstchid_value!=''){
                     let newcol_tocreate={'name':'-'};
@@ -864,7 +873,6 @@ export class MatrixRenderer extends Component {
                     let newcol_row_index=0;
                     self.model.metaData.rowGroupBys.forEach(field => {
                         const fieldName = field.split(':')[0];
-                        console.log(fieldName,row_index)
                         const fieldInfo = self.model.metaData.fields[fieldName];
                         //var gbys_new_value = $("#"+fieldName+"_"+row_index);
                         var gbys_new_value=newcol_cell.groupId[0][newcol_row_index];
@@ -878,9 +886,7 @@ export class MatrixRenderer extends Component {
                     self.model.metaData.colGroupBys.forEach(colfield => {
                         const colfieldName = colfield.split(':')[0];
                         const colfieldInfo = self.model.metaData.fields[colfieldName];
-                        console.log("colfieldName",colfieldName,firstchild_position)
                         var col_old_value = $('#newcol_'+colfieldName+'_'+firstchild_position).attr('data-value');
-                        console.log("col_old_value===",col_old_value)
                         if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
                             col_old_value = self.formatDate(col_old_value, 'date');
                         }
@@ -975,8 +981,7 @@ export class MatrixRenderer extends Component {
             this.state.edits[newRowId] = {};
             this.model.metaData.rowGroupBys.forEach(field => {
                 const fieldName = field.split(':')[0];
-                console.log("default value",this.model.metaData.fields[fieldName].default)
-                this.state.edits[newRowId][fieldName] = null;
+                this.state.edits[newRowId][fieldName] = field.value?field.value:null;
                 /*field.subGroupMeasurements.forEach(cell => {
                     this.state.edits[newRowId][cell.measure] = null;
                 });*/
@@ -992,51 +997,6 @@ export class MatrixRenderer extends Component {
             }
         }.bind(this),100);
     }
-
-    getDynamicColumns() {
-        return this.model.data?.dynamicColumns 
-            ? [...this.model.data.dynamicColumns.keys()] 
-            : [];
-    }
-    
-    /*async onAddColumnClicked(cell,cell_index,model) {
-        alert("onAddColumnClicked");
-        const dynamicColumns = this.model.data.dynamicColumns || new Map();
-        console.log("dynamicColumns", dynamicColumns);
-        if (dynamicColumns.size >= 16384)// 16384 is the max number of columns in Excel
-        {
-            this.notification.add(_t("Maximum number of dynamic columns reached."), { type: "danger" });
-            return;
-        }
-        console.log(this.model.metaData.colFields)
-        const usedFields = Array.from(dynamicColumns.values()).map(c => c.fieldName);
-        console.log("usedFields", usedFields);
-        const availableColumns = (this.model.metaData.colFields || [])
-            .filter(f => !usedFields.includes(f));
-        console.log("availableColumns", availableColumns);
-        
-        const $container = $(this.rootRef.el);
-        $container.attr("data-tooltip", _t("Select a column"));
-        $container.addClass("o_input_dropdown");
-        $container.css('display', 'block');
-        const $dropdown = $(`
-            <div class="custom-dropdown">
-                ${availableColumns.map(f => `
-                    <div class="dropdown-item" data-field="${f}">
-                        ${this.model.metaData.fields[f].string}
-                    </div>
-                `).join('')}
-            </div>
-        `);
-        console.log($dropdown);
-        $dropdown.on('click', '.dropdown-item', (e) => {
-            const fieldName = $(e.currentTarget).data('field');
-            this.model.addDynamicColumn(fieldName);
-            $dropdown.remove();
-        });
-        console.log("$container", $container);
-        $container.append($dropdown);
-    }*/
 
     async onAddColumnClicked(cell,cell_index,model) {
         console.log("onAddColumnClicked", cell,cell_index,model);
@@ -1073,7 +1033,6 @@ export class MatrixRenderer extends Component {
         }*/
         this.table.headers.forEach((headerRow, index) => {
             if (index > 0) {
-                console.log("headerRow===",headerRow,index);
                 const headerRow_th = document.querySelector(`th[name="${headerRow[0].name}"][index="${headerRow.length-1}"]`);
                 const headerRow_newTh = document.createElement('th');
                 headerRow_newTh.classList.add('new_col');
@@ -1122,7 +1081,6 @@ export class MatrixRenderer extends Component {
         rows.forEach((row) => {
             let measure_name = this.table.rows[0].subGroupMeasurements[0].measure;
             var rowgroupbys_length=this.model.metaData.rowGroupBys.length;
-            console.log("row=====",row)
             const $row = $(`#${measure_name}_${row_index}_0`).closest('tr');
             const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length;
             const inputId = `${measure_name}_${row_index}_${len_row}`;
@@ -1138,9 +1096,6 @@ export class MatrixRenderer extends Component {
                 $newTd.empty();
                 $newTd.addClass('new_col');
                 $newTd.html(`<input type="number" class="form-control edit_mode" id="newcol_${measure_name}_${row_index}_${next_cell_index}">`);
-                console.log("$lastTd======",$lastTd);
-                console.log("$newTd=======",$newTd);
-                // Insert after the original TD
                 $lastTd.after($newTd);
             } else {
                 console.error(`Element with ID ${inputId} not found`);
@@ -1148,23 +1103,8 @@ export class MatrixRenderer extends Component {
             row_index++;
         });
     }
-    async onHeaderClick(columnKey) {
-        if (!this.model.data.dynamicColumns || !this.model.data.dynamicColumns.has(colKey)) return;
-        const column = this.model.data.dynamicColumns.get(columnKey);
-        const field = column.fieldInfo;
-        
-        if (field.type === 'many2one') {
-            const records = await this.orm.searchRead(field.relation, [], ['display_name']);
-            // Afficher la liste déroulante
-            this._renderMany2OneDropdown(columnKey, records);
-        }
-    }
+  
 
-    _renderMany2OneDropdown(columnKey, options) {
-        alert("onHeaderClick","_renderMany2OneDropdown");
-        // Logique similaire à l'implémentation existante pour les lignes
-        // Mettre à jour via: this.model.updateColumnValue(columnKey, selectedId)
-    }
     /**
      * Exports the current matrix table data in a xls file. For this, we have to
      * serialize the current state, then call the server /matrix_view/matrix/export_xlsx.

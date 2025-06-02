@@ -110,7 +110,6 @@ export class MatrixModel extends Model {
         this._loadData = (...args) => {
             return this.race.add(_loadData(...args));
         };
-
         let sortedColumn = params.metaData.sortedColumn || null;
         if (!sortedColumn && params.metaData.defaultOrder) {
             const defaultOrder = params.metaData.defaultOrder.split(" ");
@@ -158,7 +157,8 @@ export class MatrixModel extends Model {
     //--------------------------------------------------------------------------
     // Public
     //--------------------------------------------------------------------------
-    addLine() {
+    
+    async addLine() {
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
         }
@@ -174,7 +174,7 @@ export class MatrixModel extends Model {
 
         const newRow = {
             id: `new_${Date.now()}`,
-            data: this._createEmptyRowData(),
+            data: await this._createEmptyRowData(),
             groupId: [[]],
             subGroupMeasurements: subGroupMeasurements,
             isNew: true,
@@ -184,76 +184,38 @@ export class MatrixModel extends Model {
         this.notify();
     }
 
-    _createEmptyRowData() {
+    
+    async _createEmptyRowData() {
+        console.log("Creating empty row data");
+        const defaults = await this.orm.call(this.metaData.resModel, "default_get", [this.metaData.rowGroupBys.map(gb => gb.split(':')[0])]);
+        console.log("defaults",defaults)
         const data = {};
-        this.metaData.rowGroupBys.forEach(groupBy => {
+        //this.metaData.rowGroupBys.forEach(groupBy => {
+        for (const groupBy of this.metaData.rowGroupBys) {
             const fieldName = groupBy.split(':')[0];
+            const field = this.metaData.fields[fieldName];
+            let label='';
+            let value = defaults[fieldName];
+            if (field.type=='many2one' && defaults[fieldName]!== undefined) {
+                let record = await this.orm.searchRead(field.relation,[['id','=',defaults[fieldName]]] , ["display_name"]);
+                label= record.length > 0 ? record[0].display_name : '';
+            }
+            else if (field.type === 'date' || field.type === 'datetime') {
+                label = formatDate(value, field.type);
+                value = formatDate(value, field.type);
+            }
+            
             // Initialize with proper structure
             data[fieldName] = {
-                value: null,
-                label: '',
+                //value: this._getDefaultValueForField(field),
+                value: value,// || this._getDefaultValueForField(field),
+                label: label,
                 ...(this.data[fieldName] || {}) // Preserve existing data if any
             };
-        });
+        }
         return data;
     }
     
-    addColumn(fieldName, interval) {
-        if (this.race.getCurrentProm()) return;
-
-        const metaData = this._buildMetaData();
-        let groupBy = fieldName;
-        if (interval) {
-            groupBy = `${fieldName}:${interval}`;
-        }
-        
-        metaData.expandedColGroupBys.push(groupBy);
-        const config = { metaData, data: this.data };
-        
-        // Ajouter le nouveau groupe aux colonnes
-        const newGroupId = [[], [fieldName]];
-        this._addGroup(this.data.colGroupTree, [fieldName], [fieldName]);
-        
-        // Initialiser les mesures pour la nouvelle colonne
-        this.metaData.activeMeasures.forEach(measure => {
-            const key = JSON.stringify([[], [fieldName]]);
-            this.data.measurements[key] = this.data.measurements[key] || [{
-                [measure]: 0
-            }];
-        });
-
-        this.metaData = metaData;
-        this.notify();
-    }
-
-    async addDynamicColumn(fieldName) {
-        const field = this.metaData.fields[fieldName];
-        const columnKey = `col_${fieldName}_${Date.now()}`;
-        
-        // Initialiser les valeurs pour toutes les lignes
-        this.data.rows.forEach(row => {
-            row[columnKey] = {
-                value: null,
-                fieldType: field.type,
-                relation: field.relation,
-                domain: field.domain
-            };
-        });
-
-        this.data.dynamicColumns.set(columnKey, {
-            fieldName,
-            selectedValue: null,
-            fieldInfo: field
-        });
-        
-        this.notify();
-    }
-
-    updateColumnValue(columnKey, value) {
-        const column = this.data.dynamicColumns.get(columnKey);
-        column.selectedValue = value;
-        this.notify();
-    }
     /**
      * Add a groupBy to rowGroupBys or colGroupBys according to provided type.
      *
@@ -1263,12 +1225,9 @@ export class MatrixModel extends Model {
                     const value = this._getCellValue(groupIntersectionId, measure, originIndexes, {
                         data: this.data,
                     });
-                    console.log("groupIntersectionId============", groupIntersectionId);
                     /*const recordIds = this._getRecordIdsForCell(groupIntersectionId).then(record_ids => {
-                            console.log(record_ids); // -> [1]
                             return record_ids; 
                         });*/
-                    //console.log("recordIds============", recordIds,recordIds[0]);
                     row.subGroupMeasurements.push({
                         id: groupIntersectionId,
                         groupId: groupIntersectionId,
