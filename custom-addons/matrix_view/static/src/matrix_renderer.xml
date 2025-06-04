@@ -34,7 +34,6 @@
                                     'cursor-pointer': cell.isLeaf !== undefined,
                                     'bg-light': cell.isLeaf
                                 }"
-                                t-on-click.prevent="() => cell.isLeaf !== undefined &amp;&amp; this.onHeaderClick(cell, 'col')"
                                 t-att-name="cell.name" t-att-type="cell.type"
                                 t-att-index="cell_index" t-att-id="cell.fieldId||cell.title">
                                 <span t-esc="cell.title"/>
