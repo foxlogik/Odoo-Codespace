@@ -501,44 +501,6 @@ export class MatrixModel extends Model {
             rows: [...(this.data.newRows || []), ...modelRows]
         };
     }
-    /*async _getRecordIdsForRow(row) {
-        const domain = [];
-        
-        // Build domain from row group values
-        this.metaData.rowGroupBys.forEach(groupBy => {
-            const fieldName = groupBy.split(':')[0];
-            const value = row.data[fieldName]?.value;
-            if (value !== undefined && value !== null) {
-                domain.push([fieldName, '=', value]);
-            }
-        });
-
-        if (domain.length === 0) return [];
-        
-        // Get matching record IDs
-        return this.orm.search(this.metaData.resModel, domain, { limit: 1000 });
-    }
-
-    async getTable() {
-        const headers = this._getTableHeaders();
-        const modelRows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
-            .filter(row => !(row.title === "Total" && row.indent === 0));
-        
-        // Enhance rows with record IDs (using Promise.all for async)
-        const enhancedRows = await Promise.all(modelRows.map(async row => {
-            const recordIds = await this._getRecordIdsForRow(row);
-            return {
-                ...row,
-                _recordIds: recordIds, // Store IDs
-                _isAggregate: recordIds.length > 1
-            };
-        }));
-        
-        return {
-            headers,
-            rows: [...(this.data.newRows || []), ...enhancedRows]
-        };
-    }*/
     
     _getLeafColumns(tree) {
         const columns = [];
