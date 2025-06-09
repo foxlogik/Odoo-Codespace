@@ -18,7 +18,7 @@
         <field name="name">analytic.line.matrix.model</field>
         <field name="model">account.analytic.line</field>
         <field name="arch" type="xml">
-            <matrix string="Analytic Matrix View">
+            <matrix string="Analytic Matrix View" default_order="date desc" no_total="1">
                 
                 <field name="date" type="row" widget="date"/>
                 <field name="account_id" type="row" domain="[('plan_id', 'child_of', 1),('active','=',True)]"/>

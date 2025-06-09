@@ -494,7 +494,13 @@ export class MatrixModel extends Model {
     getTable() {
         const headers = this._getTableHeaders();
         const modelRows = this._getTableRows(this.data.rowGroupTree, this._getLeafColumns(this.data.colGroupTree))
-            .filter(row => !(row.title === "Total" && row.indent === 0));
+            .filter(row => !(row.title === "Total" && row.indent === 0)).sort((a, b) => {
+                const defaultOrder=this.metaData.defaultOrder;
+                if (defaultOrder) {
+                    const [field, order] = defaultOrder.split(" ");
+                    return a.data[field].label.localeCompare(b.data[field].label) * (order === "asc" ? 1 : -1);
+                }
+            });
         
         return {
             headers: headers,
