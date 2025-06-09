@@ -248,37 +248,41 @@ export class MatrixRenderer extends Component {
      */
     async getMany2OneOptions(fieldName) {
         const field = this.model.metaData.fields[fieldName];
+        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
+        console.log("fieldAttrs",fieldAttrs)
+        console.log("field.domain",field.domain);
         if (field.type === "many2one") {
             const model = field.relation;
             let domain = [];
             const pattern = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])])";
-            // if (field.domain) {
-            //     // Replace the pattern with the actual company_id
-            //     var fieldDomain=JSON.stringify(field.domain);
-            //     if (fieldDomain.includes(pattern)) {
-            //         domain = companyId
-            //                     ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
-            //                     : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
-            //         /*try {
+            if (field.domain || fieldAttrs?.domain) {
+                // Replace the pattern with the actual company_id
+                var fieldDomain = fieldAttrs?.domain?fieldAttrs.domain:field.domain
+                fieldDomain=JSON.stringify(fieldDomain);
+                if (fieldDomain.includes(pattern)) {
+                    domain = companyId
+                                ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
+                                : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                    /*try {
                     
-            //             var splitedDomain=fieldDomain.split('+');
+                        var splitedDomain=fieldDomain.split('+');
                         
-            //             if (splitedDomain.length > 1) {
-            //                 var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
-            //                 domain=[...companyDomain, ...additionalDomain];
-            //             }
+                        if (splitedDomain.length > 1) {
+                            var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
+                            domain=[...companyDomain, ...additionalDomain];
+                        }
                     
                     
-            //         } catch (error) {
-            //             console.error("Invalid domain:", field.domain, error);
-            //             domain=[]
-            //         }*/
-            //     }
-            //     else{
-            //         domain=new Domain(field.domain).toList();
-            //     }
-            // }
-            
+                    } catch (error) {
+                        console.error("Invalid domain:", field.domain, error);
+                        domain=[]
+                    }*/
+                }
+                else{
+                    domain = fieldAttrs?.domain ? new Domain(fieldAttrs.domain).toList() : new Domain(field.domain).toList();
+                }
+            }
+            console.log("domain",domain);
             const records = await this.orm.searchRead(model, domain, ["display_name"]);
             return records;
         }

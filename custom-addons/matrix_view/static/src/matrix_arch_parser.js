@@ -67,6 +67,9 @@ export class MatrixArchParser {
                     if (node.getAttribute("type") === "row") {
                         archInfo.rowGroupBys.push(fieldName);
                     }
+                    if (node.hasAttribute("domain")) {
+                        archInfo.fieldAttrs[fieldName].domain=node.getAttribute("domain");
+                    }
                     break;
                 }
             }

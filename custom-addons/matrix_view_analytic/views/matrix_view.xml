@@ -21,8 +21,8 @@
             <matrix string="Analytic Matrix View">
                 
                 <field name="date" type="row" widget="date"/>
-                <field name="account_id" type="row"/>
-                <field name="product_id" type="col"/>
+                <field name="account_id" type="row" domain="[('plan_id', 'child_of', 1),('active','=',True)]"/>
+                <field name="product_id" type="col" domain="[('id','=',1)]"/>
                 <field name="partner_id" type="row" context="{'default_partner_id':10}"/>
                 <field name="amount" type="measure"/>
             </matrix>
