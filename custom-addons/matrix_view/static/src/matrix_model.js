@@ -180,7 +180,7 @@ export class MatrixModel extends Model {
             isNew: true,
         };
         
-        this.data.newRows.push(newRow);
+        this.data.newRows.unshift(newRow);
         this.notify();
     }
 
@@ -1573,4 +1573,131 @@ export class MatrixModel extends Model {
             this._sortTree(sortFunction, subTree);
         });
     }
+    // Add this method to fetch model ordering
+// async _getModelOrder(model) {
+//     try {
+//         return await this.orm.call(model, 'get_order', []);
+//     } catch (e) {
+//         console.error(`Error fetching order for ${model}:`, e);
+//         return null;
+//     }
+// }
+
+// // Update the _getGroupSubdivision method
+// async _getGroupSubdivision(group, rowGroupBy, colGroupBy, config) {
+//     const groupDomain = this._getGroupDomain(group, config);
+//     const measureSpecs = this._getMeasureSpecs(config);
+//     const groupBy = this._getGroupBySpecs(rowGroupBy, colGroupBy);
+    
+//     // Get the order for the first many2one field in groupBy
+//     let orderBy = null;
+//     for (const gb of groupBy) {
+//         const [fieldName] = gb.split(':');
+//         const field = this.metaData.fields[fieldName];
+//         if (field && field.type === 'many2one') {
+//             if (!this.modelOrderCache) {
+//                 this.modelOrderCache = new Map();
+//             }
+//             if (!this.modelOrderCache.has(field.relation)) {
+//                 const order = await this._getModelOrder(field.relation);
+//                 this.modelOrderCache.set(field.relation, order);
+//             }
+//             orderBy = this.modelOrderCache.get(field.relation);
+//             break;
+//         }
+//     }
+
+//     const kwargs = {
+//         lazy: false,
+//         context: this.searchParams.context,
+//         orderby: orderBy
+//     };
+    
+//     const subGroups = await this.orm.readGroup(
+//         config.metaData.resModel,
+//         groupDomain,
+//         measureSpecs,
+//         groupBy,
+//         kwargs
+//     );
+    
+//     return {
+//         group: group,
+//         subGroups: subGroups,
+//         rowGroupBy: rowGroupBy,
+//         colGroupBy: colGroupBy
+//     };
+// }
+
+// // Update the _sortTree method
+// async _sortTree(sortFunction, tree) {
+//     // Get the current group by field
+//     const groupBys = this.metaData.fullRowGroupBys.concat(this.metaData.fullColGroupBys);
+//     if (tree.root.values.length > 0 && groupBys.length >= tree.root.values.length) {
+//         const groupBy = groupBys[tree.root.values.length - 1];
+//         const [fieldName] = groupBy.split(':');
+//         const field = this.metaData.fields[fieldName];
+        
+//         // Handle many2one fields
+//         if (field && field.type === 'many2one') {
+//             // Get the order from cache or fetch it
+//             if (!this.modelOrderCache) {
+//                 this.modelOrderCache = new Map();
+//             }
+//             if (!this.modelOrderCache.has(field.relation)) {
+//                 const order = await this._getModelOrder(field.relation);
+//                 this.modelOrderCache.set(field.relation, order);
+//             }
+//             const order = this.modelOrderCache.get(field.relation);
+//             console.log(`Sorting by ${fieldName} with order:`, order);
+//             if (order) {
+//                 // Sort according to the model's order
+//                 const keys = [...tree.directSubTrees.keys()];
+//                 const orderedValues = await this._getOrderedMany2OneValues(fieldName, keys, order);
+//                 tree.sortedKeys = orderedValues;
+                
+//                 // Continue sorting subtrees
+//                 tree.sortedKeys.forEach((key) => {
+//                     const subTree = tree.directSubTrees.get(key);
+//                     this._sortTree(sortFunction, subTree);
+//                 });
+//                 return;
+//             }
+//         }
+//     }
+    
+//     // Default sorting
+//     tree.sortedKeys = sortBy([...tree.directSubTrees.keys()], sortFunction(tree));
+//     tree.sortedKeys.forEach((key) => {
+//         const subTree = tree.directSubTrees.get(key);
+//         this._sortTree(sortFunction, subTree);
+//     });
+// }
+
+// // Add helper method to sort many2one values
+// async _getOrderedMany2OneValues(fieldName, values, order) {
+//     const field = this.metaData.fields[fieldName];
+//     const ids = values.map(v => v[0]); // Extract IDs
+    
+//     // Search records with the model's order
+//     const records = await this.orm.searchRead(
+//         field.relation,
+//         [['id', 'in', ids]],
+//         ['id'],
+//         { order: order }
+//     );
+    
+//     // Map IDs to their position in the ordered list
+//     const idToOrder = {};
+//     records.forEach((record, index) => {
+//         idToOrder[record.id] = index;
+//     });
+    
+//     // Sort values based on their position in ordered list
+//     return values.sort((a, b) => {
+//         const aOrder = idToOrder[a[0]] || Infinity;
+//         const bOrder = idToOrder[b[0]] || Infinity;
+//         return aOrder - bOrder;
+//     });
+// }
 }

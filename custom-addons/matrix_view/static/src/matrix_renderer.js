@@ -248,21 +248,26 @@ export class MatrixRenderer extends Component {
      */
     async getMany2OneOptions(fieldName) {
         const field = this.model.metaData.fields[fieldName];
-        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
-        console.log("fieldAttrs",fieldAttrs)
-        console.log("field.domain",field.domain);
+        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];        
         if (field.type === "many2one") {
             const model = field.relation;
             let domain = [];
             const pattern = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])])";
+            const pattern2 = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'in', [company_id])] or [('company_id', '=', False)]) + ([])";
             if (field.domain || fieldAttrs?.domain) {
                 // Replace the pattern with the actual company_id
-                var fieldDomain = fieldAttrs?.domain?fieldAttrs.domain:field.domain
+                var fieldDomain = fieldAttrs?.domain?fieldAttrs.domain:field.domain;
                 fieldDomain=JSON.stringify(fieldDomain);
+                console.log("fieldDomain",fieldDomain);
+                fieldDomain.includes(pattern)
                 if (fieldDomain.includes(pattern)) {
                     domain = companyId
                                 ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
                                 : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                } else if (fieldDomain.includes(pattern2)) {
+                    domain = companyId
+                                ? ['|', ['company_id', '=', false], ['company_id', 'in', [companyId]]]
+                                : [['company_id', '=', false]];
                     /*try {
                     
                         var splitedDomain=fieldDomain.split('+');
@@ -478,12 +483,15 @@ export class MatrixRenderer extends Component {
             return;
         }
         // Set the value of the input to the selected option 
+        console.log("Selected Many2OneOption: ", option.id, '-', option.display_name);
+        console.log("fieldName",fieldName);
+        console.log("input",input);
         input.val(option.display_name);
         input.attr('data-value', option.id);
         input.closest('td').attr('data-tooltip', option.display_name);
         // Set the value of the row data to the selected option
         if (row.data){
-            (row.data)[fieldName] = { id: option.id, label: option.display_name };
+            row.data[fieldName] = { id: option.id, label: option.display_name };
         }
         row.edited = true;
         // Remove the dropdown menu
@@ -529,7 +537,6 @@ export class MatrixRenderer extends Component {
         }
     }
     onFieldEdit(fieldname_id,row,cell=null) {
-        
         const input = $('#'+fieldname_id);
         const value = input.val();
         input.attr('data-value', value);
@@ -608,6 +615,14 @@ export class MatrixRenderer extends Component {
                                 const fieldName = field.split(':')[0];
                                 const fieldInfo = this.model.metaData.fields[fieldName];
                                 var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
+                                if (!gbys_new_value || gbys_new_value === undefined || gbys_new_value === null) {
+                                    if (fieldInfo && fieldInfo.type === 'many2one') {
+                                        gbys_new_value = row.data[fieldName]?.id || '';
+                                    }
+                                    else {
+                                        gbys_new_value = row.data[fieldName]?.value || '';
+                                    }
+                                }
                                 if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
                                     gbys_new_value = this.formatDate(gbys_new_value, 'date');
                                 }
