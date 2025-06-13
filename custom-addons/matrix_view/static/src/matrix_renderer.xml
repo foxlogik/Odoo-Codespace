@@ -4,8 +4,8 @@
     <t t-name="matrix_view.MatrixRenderer">
         <t t-call="{{ props.buttonTemplate }}"/>
         <div t-if="model.hasData() and model.metaData.activeMeasures.length" 
-            class="o_matrix mx-3 table-responsive">
-            <table class="table table-sm table-bordered">
+            class="o_matrix mx-3 table-responsive" t-ref="root">
+            <table class="table table-sm table-bordered" t-ref="table">
                 <!-- Column Group Headers -->
                 <thead>
                     <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
@@ -27,7 +27,7 @@
                         
                         <!-- Column group headers -->
                         <t t-foreach="headerRow" t-as="cell" t-key="'header_row_' + cell_index">
-                            <th t-att-colspan="cell.width" 
+                            <th t-att-colspan="cell.width" t-attf-style="'min-width:{cell.width}px;'"
                                 t-att-rowspan="cell.height"
                                 class="text-center"
                                 t-att-class="{
@@ -61,8 +61,11 @@
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
-                                <th class="text-center">
+                                <th class="text-center position-relative">
                                     <span t-esc="model.metaData.fields[fieldName].string"/>
+                                    <span class="o_resize position-absolute top-0 end-0 h-100"
+                                            style="width: 4px; cursor: col-resize; z-index: 1;"
+                                            t-on-pointerdown.stop.prevent="onStartResize"/>
                                 </th>
                             </t>
                         </t>
@@ -70,8 +73,12 @@
                         <!-- Measure headers for each column group -->
                         <t t-foreach="table.headers[table.headers.length - 1]" t-as="colGroup" t-key="'measure_' + colGroup_index">
                             <t t-foreach="model.metaData.activeMeasures" t-as="measure" t-key="measure">
-                                <th class="text-center">
+                                <th class="text-center position-relative">
                                     <span t-esc="model.metaData.measures[measure].string"/>
+                                    <span class="o_resize position-absolute top-0 end-0 h-100"
+                                            style="width: 4px; cursor: col-resize; z-index: 1;"
+                                            t-on-pointerdown.stop.prevent="onStartResize"/>
+                                    
                                 </th>
                             </t>
                         </t>
@@ -190,6 +197,7 @@
                                             <!-- Non-edit mode display -->
                                             <span t-esc="row.data[fieldName]?.label"/>
                                         </t>
+                                        
                                     </td>
                                 </t>
                             </t>

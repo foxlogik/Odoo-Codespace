@@ -1097,6 +1097,9 @@ export class MatrixModel extends Model {
             const groupId = [[], group.values];
             const isLeaf = !tree.directSubTrees.size;
             const leafCount = leafCounts[JSON.stringify(tree.root.values)];
+            const fieldType=rowIndex === 0
+                        ? undefined
+                        : fields[colGroupBys[rowIndex - 1].split(":")[0]].type;
             const cell = {
                 groupId: groupId,
                 height: isLeaf ? colGroupBys.length + 1 - rowIndex : 1,
@@ -1106,7 +1109,7 @@ export class MatrixModel extends Model {
                     rowIndex === 0
                         ? undefined
                         : fields[colGroupBys[rowIndex - 1].split(":")[0]].string,
-                title: group.labels.length ? JSON.stringify(group.labels[group.labels.length - 1]) : _t("Total"),
+                title: group.labels.length ? fieldType==='json'?JSON.stringify(group.labels[group.labels.length - 1]):group.labels[group.labels.length - 1] : _t("Total"),
                 width: leafCount * measureCount * (2 * originCount - 1),
                 name:rowIndex === 0
                         ? undefined

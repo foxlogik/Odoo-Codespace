@@ -34,3 +34,13 @@ class AnalyticLine(models.Model):
             record.analytic_distribution = {str(record.account_id.name):record.amount}
 
     
+
+class ProductProduct(models.Model):
+    _inherit = "product.product"
+    _order = 'sequence, default_code, name, id'
+    
+    sequence = fields.Integer(
+        string='Sequence',
+        help="Gives the sequence order when displaying a list of products.",
+        default=10,
+    )

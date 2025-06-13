@@ -104,3 +104,20 @@
     background-color: #e0e0e0;  /* or your theme's active color */
     font-weight: bold;
 }
+span.o_resize {
+            cursor: col-resize;
+        }
+.o_resize {
+    opacity: 0;
+    background-color: #a0a0ff;
+  }
+  .o_resize:hover {
+    opacity: 1 !important;
+  }
+  th.position-relative:hover .o_resize {
+    opacity: 0.5;
+  }
+  .o_matrix table td input {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
