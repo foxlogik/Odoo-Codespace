@@ -59,5 +59,22 @@
         <field name="view_id" ref="analytic.view_account_analytic_line_tree"/>
         <field name="search_view_id" ref="analytic.view_account_analytic_line_filter"/>
     </record>
-    
+
+
+    <record id="view_matrix_move_line" model="ir.ui.view">
+        <field name="name">move.line.matrix.model</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <matrix string="Journal Matrix View" default_order="date desc" no_total="1">
+                
+                <field name="date" type="row" widget="date"/>
+                <field name="account_id" type="row" domain="[('deprecated','=',False)]"/>
+                <field name="product_id" type="col" />
+                <field name="analytic_distribution" type="col" widget="analytic_distribution"/>
+                <field name="partner_id" type="row" context="{'default_partner_id':10}"/>
+                <field name="debit" type="measure"/>
+            </matrix>
+        </field>
+    </record>
+
 </odoo>
