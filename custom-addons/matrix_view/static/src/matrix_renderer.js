@@ -41,7 +41,7 @@ export class MatrixRenderer extends Component {
         });
         this.state = useState({
             edits: {},
-            isEditing: false,
+            isEditing: true,
         });
         this._m2oOptions = [];
         this.resizing = false;
@@ -993,16 +993,16 @@ export class MatrixRenderer extends Component {
                 }
 
                 this.model.data.newRows = [];
-                this.state.isEditing = false;
+                this.state.isEditing = true;
                 this.state.edits = {};
                 await this.model.load(this.model.searchParams);
                 
                 
                 this.notification.add(_t("Changes saved successfully"), { type: "success" });
-                $('.o_matrix_edit').show();
-                $('.o_matrix_download').show();
-                $('.o_matrix_save').hide();
-                $('.o_matrix_cancel').hide();
+                //$('.o_matrix_edit').show();
+                //$('.o_matrix_download').show();
+                //$('.o_matrix_save').hide();
+                //$('.o_matrix_cancel').hide();
                 this.model.notify();
                 this.render();
                 setTimeout(function(){ window.location.reload();},100);
@@ -1014,20 +1014,22 @@ export class MatrixRenderer extends Component {
     }
     //Cancel Button to cancel the ongoing modifications and render the readonly mode
     onCancelButtonClicked(){
-        $('.o_matrix_edit').show();
-        $('.o_matrix_download').show();
-        $('.o_matrix_save').hide();
-        $('.o_matrix_cancel').hide();
+        //$('.o_matrix_edit').show();
+        //$('.o_matrix_download').show();
+        //$('.o_matrix_save').hide();
+        //$('.o_matrix_cancel').hide();
         
         // Reset model state
         this.model.data.newRows = [];
         this.model.load(this.model.searchParams);
         
         // Reset UI state
-        this.state.isEditing = false;
+        this.state.isEditing = true;
         this.state.edits = {};
         $('.new_col').remove();
         this.model.notify();
+        this.render();
+        setTimeout(function(){ window.location.reload();},100);
     }
 
 
@@ -1074,7 +1076,7 @@ export class MatrixRenderer extends Component {
                 <div class="o-autocomplete dropdown">
                 <input type="text" class="o-autocomplete--input o_input edit_mode"
                         autocomplete="off" placeholder=""
-                        style="margin-top:3px!important;height: 30px!important;" name="${cell.name}">
+                        style="margin-top:3px!important;height: 30px!important;min-width:190px;" name="${cell.name}">
                 </div>
                 <span class="o_dropdown_button" style="top:13px!important;"></span>
             </div>
@@ -1124,7 +1126,7 @@ export class MatrixRenderer extends Component {
                         <div class="o-autocomplete dropdown">
                             <input type="text" class="o-autocomplete--input o_input edit_mode"
                                 autocomplete="off" placeholder="" id="${'newcol_'+headerRow[0].name+'_'+next_cell_index}"
-                                style="margin-top:3px!important;height: 30px!important;" name="${headerRow[0].name}"
+                                style="margin-top:3px!important;height: 30px!important;min-width:190px;" name="${headerRow[0].name}"
                                 value="${defaultValueLabel || ''}"
                                 data-value="${defaultValue || ''}" >
                         </div>
