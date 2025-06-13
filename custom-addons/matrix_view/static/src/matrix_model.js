@@ -1089,6 +1089,8 @@ export class MatrixModel extends Model {
          * @param {Object} tree
          */
         function generateTreeHeaders(tree, fields) {
+            console.log("generateTreeHeaders", tree, fields);
+            
             const group = tree.root;
             const rowIndex = group.values.length;
             const row = colGroupRows[rowIndex];
@@ -1104,7 +1106,7 @@ export class MatrixModel extends Model {
                     rowIndex === 0
                         ? undefined
                         : fields[colGroupBys[rowIndex - 1].split(":")[0]].string,
-                title: group.labels.length ? group.labels[group.labels.length - 1] : _t("Total"),
+                title: group.labels.length ? JSON.stringify(group.labels[group.labels.length - 1]) : _t("Total"),
                 width: leafCount * measureCount * (2 * originCount - 1),
                 name:rowIndex === 0
                         ? undefined
@@ -1116,6 +1118,11 @@ export class MatrixModel extends Model {
                         ? undefined
                         : fields[colGroupBys[rowIndex - 1].split(":")[0]].type,
             };
+            console.log(group.values[0])
+            console.log(rowIndex === 0
+                        ? undefined
+                        : fields[colGroupBys[rowIndex - 1].split(":")[0]])
+            console.log("cell", cell);
             if (group.labels.length){
                 row.push(cell);
             }
