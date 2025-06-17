@@ -7,6 +7,7 @@ import { KeepLast, Race } from "@web/core/utils/concurrency";
 import { DEFAULT_INTERVAL } from "@web/search/utils/dates";
 import { Model } from "@web/model/model";
 import { computeReportMeasures, processMeasure } from "@web/views/utils";
+import { useService } from "@web/core/utils/hooks";
 
 /**
  * @param {number} value
@@ -103,7 +104,8 @@ export class MatrixModel extends Model {
      * @param {Object} [params.data] previously exported data
      */
     setup(params) {
-        // concurrency management
+        // concurrency management¨
+        this.orm = params.orm || useService("orm");
         this.keepLast = new KeepLast();
         this.race = new Race();
         const _loadData = this._loadData.bind(this);
@@ -162,7 +164,6 @@ export class MatrixModel extends Model {
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
         }
-        console.log("addLine",this.data.newRows)
         const columns = this._getLeafColumns(this.data.colGroupTree);
         const subGroupMeasurements = columns.map(column => ({
             groupId: [[], column.groupId[1]],
@@ -186,16 +187,13 @@ export class MatrixModel extends Model {
 
     
     async _createEmptyRowData() {
-        console.log("Creating empty row data");
         const defaults = await this.orm.call(this.metaData.resModel, "default_get", [this.metaData.rowGroupBys.map(gb => gb.split(':')[0])]);
-        console.log("this.searchParams.context",this.searchParams.context)
         for (const [key, val] of Object.entries(this.searchParams.context)) {
             if (key.startsWith("default_")) {
                 const fieldName = key.slice(8);  // Remove "default_" prefix
                 defaults[fieldName] = val;
             }
         }  
-        console.log("defaults",defaults)
         const data = {};
         //this.metaData.rowGroupBys.forEach(groupBy => {
         for (const groupBy of this.metaData.rowGroupBys) {
@@ -512,6 +510,7 @@ export class MatrixModel extends Model {
         const columns = [];
         const traverse = (node) => {
             if (node.directSubTrees.size === 0) {
+                // Leaf node: add columns for all measures
                 this.metaData.activeMeasures.forEach(measure => {
                     columns.push({
                         groupId: [[], node.root.values],
@@ -520,7 +519,12 @@ export class MatrixModel extends Model {
                     });
                 });
             } else {
-                [...node.directSubTrees.values()].forEach(subTree => traverse(subTree));
+                // Use sortedKeys if available
+                const keys = node.sortedKeys || [...node.directSubTrees.keys()];
+                keys.forEach(key => {
+                    const subTree = node.directSubTrees.get(key);
+                    traverse(subTree);
+                });
             }
         };
         traverse(tree);
@@ -1089,7 +1093,6 @@ export class MatrixModel extends Model {
          * @param {Object} tree
          */
         function generateTreeHeaders(tree, fields) {
-            console.log("generateTreeHeaders", tree, fields);
             
             const group = tree.root;
             const rowIndex = group.values.length;
@@ -1121,11 +1124,6 @@ export class MatrixModel extends Model {
                         ? undefined
                         : fields[colGroupBys[rowIndex - 1].split(":")[0]].type,
             };
-            console.log(group.values[0])
-            console.log(rowIndex === 0
-                        ? undefined
-                        : fields[colGroupBys[rowIndex - 1].split(":")[0]])
-            console.log("cell", cell);
             if (group.labels.length){
                 row.push(cell);
             }
@@ -1134,8 +1132,16 @@ export class MatrixModel extends Model {
                 measureColumns.push(cell);
             }
 
-            [...tree.directSubTrees.values()].forEach((subTree) => {
+            /*[...tree.directSubTrees.values()].forEach((subTree) => {
                 generateTreeHeaders(subTree, fields);
+            });*/
+            const keys = tree.sortedKeys || [...tree.directSubTrees.keys()];
+    
+            keys.forEach((key) => {
+                const subTree = tree.directSubTrees.get(key);
+                if (subTree) {
+                    generateTreeHeaders(subTree, fields);
+                }
             });
         }
         generateTreeHeaders(this.data.colGroupTree, this.metaData.fields);
@@ -1178,7 +1184,6 @@ export class MatrixModel extends Model {
         const rows = [];
         const rowGroupBys = this.metaData.fullRowGroupBys;
         
-        // Flatten the tree structure to get all leaf nodes
         const flattenTree = (node, currentRow = {}) => {
             const group = node.root;
             
@@ -1190,19 +1195,22 @@ export class MatrixModel extends Model {
                     label: group.labels[group.labels.length - 1]
                 };
             }
-    
+
             if (node.directSubTrees.size === 0) {
-                // This is a leaf node - create a row
+                // Leaf node: create a row
                 const row = {
-                    id : group.id,
-                    data: {...currentRow}, // Copy all accumulated row data
+                    id: group.id,
+                    data: {...currentRow},
                     groupId: [group.values, []],
                     subGroupMeasurements: [],
                     edited: false,
                 };
                 
-                // Add measurements for each column
-                columns.forEach((column) => {
+                // Get sorted columns for this row
+                const sortedColumns = this._getSortedColumnsForRow(group.values, columns);
+                
+                // Create cells in sorted order
+                sortedColumns.forEach(column => {
                     const colGroupId = column.groupId;
                     const groupIntersectionId = [group.values, colGroupId[1]];
                     const measure = column.measure;
@@ -1210,9 +1218,7 @@ export class MatrixModel extends Model {
                     const value = this._getCellValue(groupIntersectionId, measure, originIndexes, {
                         data: this.data,
                     });
-                    /*const recordIds = this._getRecordIdsForCell(groupIntersectionId).then(record_ids => {
-                            return record_ids; 
-                        });*/
+                    
                     row.subGroupMeasurements.push({
                         id: groupIntersectionId,
                         groupId: groupIntersectionId,
@@ -1220,26 +1226,59 @@ export class MatrixModel extends Model {
                         measure: measure,
                         value: value,
                         isBold: !groupIntersectionId[0].length || !groupIntersectionId[1].length,
-                        //recordIds: recordIds,
                     });
                 });
                 
                 rows.push(row);
             } else {
                 // Continue traversing the tree
-                const subTreeKeys = node.sortedKeys || [...node.directSubTrees.keys()];
-                subTreeKeys.forEach((subTreeKey) => {
-                    const subTree = node.directSubTrees.get(subTreeKey);
-                    flattenTree(subTree, {...currentRow}); // Pass a copy of currentRow
+                const keys = node.sortedKeys || [...node.directSubTrees.keys()];
+                keys.forEach(key => {
+                    const subTree = node.directSubTrees.get(key);
+                    flattenTree(subTree, {...currentRow});
                 });
             }
         };
-    
+        
         flattenTree(tree);
         return rows;
     }
     
-    
+    _getSortedColumnsForRow(rowGroupValues, columns) {
+        // Create a mapping of full column paths to column objects
+        const columnMap = new Map();
+        columns.forEach(column => {
+            const key = JSON.stringify(column.groupId[1]); // Full column path
+            columnMap.set(key, column);
+        });
+        
+        // Get all leaf column paths in sorted order
+        const sortedColumnPaths = this._getSortedColumnPaths();
+        
+        // Create sorted columns array
+        return sortedColumnPaths.map(path => {
+            return columnMap.get(JSON.stringify(path));
+        }).filter(Boolean);
+    }
+
+    _getSortedColumnPaths() {
+        const paths = [];
+        const traverse = (node, currentPath = []) => {
+            if (node.directSubTrees.size === 0) {
+                // Leaf node: add the full path
+                paths.push([...currentPath]);
+            } else {
+                // Use sortedKeys if available
+                const keys = node.sortedKeys || [...node.directSubTrees.keys()];
+                keys.forEach(key => {
+                    const subTree = node.directSubTrees.get(key);
+                    traverse(subTree, [...currentPath, key]);
+                });
+            }
+        };
+        traverse(this.data.colGroupTree);
+        return paths;
+    }
     /**
      * returns the height of a given groupTree
      *
@@ -1337,7 +1376,7 @@ export class MatrixModel extends Model {
      * @param {Object[]} groupSubdivisions
      * @param {Config} config
      */
-    _prepareData(group, groupSubdivisions, config) {
+    async _prepareData(group, groupSubdivisions, config) {
         const { data, metaData } = config;
         const groupRowValues = group.rowValues;
         let groupRowLabels = [];
@@ -1410,11 +1449,41 @@ export class MatrixModel extends Model {
                 }
             });
         });
-
         if (metaData.sortedColumn) {
             this._sortRows(metaData.sortedColumn, config);
         }
+        console.log("data",config.data);
+        if (config.data && config.data.colGroupTree) {
+            await this._sortColumnTree(config.data.colGroupTree, config);
+            console.log("data",config.data);
+            //config.data.colGroupTree.sortedKeys = sortedKeys;
+        }
+        //await this._sortColumnTree(data.colGroupTree, metaData.colGroupBys, config);
     }
+    async _sortColumnTree(tree, config) {
+        if (!tree.directSubTrees.size) return;
+        
+        const level = tree.root.values.length;
+        const groupBy = config.metaData.fullColGroupBys[level];
+        
+        if (groupBy) {
+            const [fieldName] = groupBy.split(':');
+            const field = config.metaData.fields[fieldName];
+            const fieldAttrs = config.metaData.fieldAttrs[fieldName];
+            
+            if (field && field.type === 'many2one') {
+                const keys = [...tree.directSubTrees.keys()];
+                tree.sortedKeys = await this._sortIdsByModelOrder(keys, field.relation,fieldAttrs?.order);
+            }
+        }
+        
+        // Process children in sorted order
+        const keys = tree.sortedKeys || [...tree.directSubTrees.keys()];
+        for (const key of keys) {
+            const subTree = tree.directSubTrees.get(key);
+            await this._sortColumnTree(subTree, config);
+        }
+}
     /**
      * Make any group in tree a leaf if it was a leaf in oldTree.
      *
@@ -1532,7 +1601,7 @@ export class MatrixModel extends Model {
         }, []);
         const groupSubdivisions = await this.keepLast.add(Promise.all(proms));
         if (groupSubdivisions.length) {
-            this._prepareData(group, groupSubdivisions, config);
+            await this._prepareData(group, groupSubdivisions, config);
         }
     }
     /**
@@ -1584,15 +1653,41 @@ export class MatrixModel extends Model {
         });
     }
     // Add this method to fetch model ordering
-// async _getModelOrder(model) {
-//     try {
-//         return await this.orm.call(model, 'get_order', []);
-//     } catch (e) {
-//         console.error(`Error fetching order for ${model}:`, e);
-//         return null;
-//     }
-// }
+    async _getModelOrder(model) {
+        try {
+            //return await this.orm.call(model, 'get_order', []);
+            const rpc = useService("rpc");
+            const result = await rpc("/web/dataset/call_kw", {
+                model: "ir.model",
+                method: "search_read",
+                args: [[["model", "=", model]], ["model", "name", "order"]],
+            });
+            console.log(`Model order for ${model}:`, result);
+            return result.length > 0 ? result[0].order : null;
+        } catch (e) {
+            console.error(`Error fetching order for ${model}:`, e);
+            return null;
+        }
+    }
 
+    async _sortIdsByModelOrder(ids, model,order) {
+        if (!ids.length) return ids;
+        console.log("Sorting IDs by model order:", ids, model);
+        try {
+            // Use fixed order instead of dynamic lookup
+            const sortedIds= await this.orm.searchRead(
+                model,
+                [['id', 'in', ids]],
+                ['id'],
+                { order: order?order:await this._getModelOrder(model) }
+            ).then(records => records.map(record => record.id));
+            console.log("Sorted IDs:", sortedIds);  
+            return sortedIds
+        } catch (e) {
+            console.error("Sorting failed, using natural order", e);
+            return ids;
+        }
+    }
 // // Update the _getGroupSubdivision method
 // async _getGroupSubdivision(group, rowGroupBy, colGroupBy, config) {
 //     const groupDomain = this._getGroupDomain(group, config);
