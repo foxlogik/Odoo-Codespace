@@ -11,7 +11,7 @@
                     <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
                         <!-- Empty cells for row fields -->
                         <t t-if="headerRow_index == 0">
-                            <th t-att-colspan="model.metaData.rowGroupBys.length" 
+                            <th t-att-colspan="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible).length" 
                                 t-att-rowspan="table.headers.length" 
                                 class="">
                                 <t t-if="state.isEditing">
