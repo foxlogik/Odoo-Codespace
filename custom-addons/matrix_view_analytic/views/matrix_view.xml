@@ -21,11 +21,13 @@
             <matrix string="Analytic Matrix View" default_order="date desc" no_total="1">
                 
                 <field name="date" type="row" widget="date"/>
-                <field name="account_id" type="row" domain="[('plan_id', 'child_of', 1),('active','=',True)]"/>
-                <field name="product_id" type="col" domain="[('id','=',1)]"/>
-                <field name="name" type="row" invisible="1"/>
+                <field name="partner_id" type="row" context="{'default_partner_id':10}"/>
+                <field name="account_id" type="row" domain="[('partner_id','=','partner_id')]"/>
+                <field name="account_domain" type="domain" invisible="1"/>
+                <field name="product_id" type="col" domain="[('id','in','product_domain')]"/>
+                <field name="move_line_id" type="row" invisible="1"/>
+                <field name="product_domain" type="domain" invisible="1"/>
                 <!--<field name="analytic_distribution" type="col" widget="analytic_distribution"/>-->
-                <field name="partner_id" type="col" context="{'default_partner_id':10}" order="display_name desc"/>
                 <field name="amount" type="measure"/>
             </matrix>
         </field>
@@ -45,8 +47,8 @@
     </record>-->
 
     <record model="ir.actions.act_window" id="analytic.account_analytic_line_action">
-        <field name="context">{'search_default_group_date': 1}</field>
-        <field name="domain">[('auto_account_id','=', active_id)]</field>
+        <field name="context">{'search_default_group_date': 1,'default_product_id':16,'default_partner_id':1}</field>
+        <field name="domain">[('auto_account_id','=', active_id),('product_id','!=',False)]</field>
         <field name="name">Gross Margin</field>
         <field name="res_model">account.analytic.line</field>
         <field name="view_mode">tree,form,graph,pivot,matrix</field>
@@ -59,6 +61,8 @@
         <field name="view_mode">tree,kanban,form,graph,pivot,matrix</field>
         <field name="view_id" ref="analytic.view_account_analytic_line_tree"/>
         <field name="search_view_id" ref="analytic.view_account_analytic_line_filter"/>
+        <field name="context">{'default_product_id':16,'default_partner_id':1}</field>
+        <field name="domain">[('product_id','!=',False)]</field>
     </record>
 
 

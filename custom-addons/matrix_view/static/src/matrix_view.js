@@ -50,6 +50,7 @@ export const matrixView = {
                 title: archInfo.title || _t("Untitled"),
                 widgets: archInfo.widgets,
                 colFields: archInfo.colFields,
+                domainFields: archInfo.domainFields,
             };
         }
 

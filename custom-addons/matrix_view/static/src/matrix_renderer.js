@@ -346,9 +346,11 @@ export class MatrixRenderer extends Component {
      * Fetch many2one options
      * @param {string} fieldName
      */
-    async getMany2OneOptions(fieldName) {
+    async getMany2OneOptions(fieldName,row,row_id=null) {
+        console.log("getMany2OneOptions", row);
         const field = this.model.metaData.fields[fieldName];
-        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];        
+        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
+        console.log("domainFields", this.model.metaData.domainFields,this.model.metaData.fields);        
         if (field.type === "many2one") {
             const model = field.relation;
             let domain = [];
@@ -368,26 +370,93 @@ export class MatrixRenderer extends Component {
                     domain = companyId
                                 ? ['|', ['company_id', '=', false], ['company_id', 'in', [companyId]]]
                                 : [['company_id', '=', false]];
-                    /*try {
-                    
-                        var splitedDomain=fieldDomain.split('+');
-                        
-                        if (splitedDomain.length > 1) {
-                            var additionalDomain=new Domain(eval(splitedDomain[1].trim())).toList();
-                            domain=[...companyDomain, ...additionalDomain];
-                        }
-                    
-                    
-                    } catch (error) {
-                        console.error("Invalid domain:", field.domain, error);
-                        domain=[]
-                    }*/
                 }
                 else{
                     domain = fieldAttrs?.domain ? new Domain(fieldAttrs.domain).toList() : new Domain(field.domain).toList();
                 }
             }
             console.log("domain",domain);
+            
+            if (domain){
+                for (let i = 0; i < domain.length; i++) {
+                    if (this.model.metaData.domainFields.includes(domain[i][2]) || this.model.metaData.fields[domain[i][2]]!== undefined) {
+                        const formatGroup = (groupBys, groupValues) => {
+                            return groupBys.map((groupBy, index) => {
+                                const fieldName = groupBy.split(':')[0];
+                                let value = groupValues[index];
+                                const fieldInfo = this.model.metaData.fields[fieldName];
+                                if (fieldInfo && fieldInfo.type === 'date') {
+                                    value = this.formatDate(value, 'date');
+                                }
+                                return [fieldName, '=', value];
+                            });
+                        };
+                        console.log(this.model.metaData.colGroupBys)
+                        if (this.model.metaData.colGroupBys && this.model.metaData.colGroupBys.includes(fieldName) && this.model.metaData.domainFields.includes(domain[i][2])) {
+                            console.warn("Many2one field in colGroupBys, skipping domain modification", fieldName);
+                            const many2onedomain_records = await this.orm.searchRead(this.model.metaData.resModel, [[domain[i][2],'!=',null],[domain[i][2],'!=',[]]], [domain[i][2]],{limit:1});
+                            console.log("many2onedomain_records",many2onedomain_records);
+                            if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
+                                domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
+                            }
+                            else{
+                                domain[i][2]=many2onedomain_records[0][domain[i][2]];
+                            }
+                        }
+                        else if (!row.isNew){
+                            if (this.model.metaData.rowGroupBys.includes(domain[i][2])){
+                                console.warn("Many2one field in rowGroupBys, modifying domain", domain[i][2]);
+                                console.log("row.groupId",row.groupId);
+                                console.log("row.data",row.data);
+                                console.log("domain[i][2]",domain[i][2]);
+                                console.log("row_id",row_id);
+                                const dropdownEl = "#div_"+row_id+"_"+domain[i][2];
+                                console.log("dropdownEl",dropdownEl);
+                                const $input = $(dropdownEl).find("input.o-autocomplete--input");
+                                console.log("$input", $input);
+                                console.log("$input.length", $input.length);
+                                console.log("$input.attr('data-value')", $input.attr('data-value'));
+                                if ($input.length && $input.attr('data-value') !== undefined && $input.attr('data-value') !== null && $input.attr('data-value') !== '') {
+                                    if (this.model.metaData.fields[domain[i][2]].type === 'many2one') {
+                                        domain[i][2] = parseInt($input.attr('data-value'));
+                                    }
+                                    else {
+                                        domain[i][2] = $input.attr('data-value');
+                                    }
+                                    console.log("domain[i][2] set from input", domain[i][2]);
+                                }
+                                else if (row.data && row.data[domain[i][2]] && (row.data[domain[i][2]].value !== undefined || row.data[domain[i][2]].id !== undefined)) {
+                                    domain[i][2] = row.data[domain[i][2]].value? row.data[domain[i][2]].value : row.data[domain[i][2]].id;
+                                    console.log("domain[i][2] set from row data", domain[i][2]);
+                                }
+                            }
+                            else{
+                                let many2onedomain=formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]);
+                                const many2onedomain_records = await this.orm.searchRead(this.model.metaData.resModel, many2onedomain, [domain[i][2]]);
+                                console.log("many2onedomain_records",many2onedomain_records);
+                                if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
+                                    domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
+                                    console.log("domain[i][2] set from many2onedomain_records-type many2one", domain[i][2]);
+                                }
+                                else{
+                                    domain[i][2]=many2onedomain_records[0][domain[i][2]];
+                                    console.log("domain[i][2] set from many2onedomain_records", domain[i][2]);
+                                }
+                            }
+                        }
+                        else if (row.data && row.data[domain[i][2]] && (row.data[domain[i][2]].value !== undefined || row.data[domain[i][2]].id !== undefined)) {
+                            domain[i][2] = row.data[domain[i][2]].value? row.data[domain[i][2]].value : row.data[domain[i][2]].id;
+                        }
+                        else if (this.model.metaData.domainFields.includes(domain[i][2]) && row.isNew){
+                            domain=[];
+                        }
+                        
+
+                        
+                    }
+                }
+            }
+            console.log("Final domain for many2one options", domain);
             const records = await this.orm.searchRead(model, domain, ["display_name"]);
             return records;
         }
@@ -396,7 +465,7 @@ export class MatrixRenderer extends Component {
     async displayMany2oneRecord(ev, fieldName,row_id,row) {
         // Remove any existing dropdown first
         $(".o-autocomplete--dropdown-menu").remove();   
-        const options = await this.getMany2OneOptions(fieldName);
+        const options = await this.getMany2OneOptions(fieldName,row,row_id);
         this._m2oOptions = options;
         // The clicked .o_input_dropdown div
         const dropdownEl = "#div_"+row_id+"_"+fieldName;
@@ -1062,35 +1131,8 @@ export class MatrixRenderer extends Component {
         console.log("onAddColumnClicked", cell,cell_index,model);
         const th = document.querySelector(`th[name="${cell.name}"][index="${cell_index}"]`);
         var count_new_col = th.closest('tr').querySelectorAll('th.new_col').length || 0;
-        const newTh = document.createElement('th');
-        newTh.classList.add('new_col');
         const next_cell_index=cell_index+1+count_new_col;
-        newTh.setAttribute('name', '${cell.name}');
-        newTh.setAttribute('index', '${next_cell_index}');
-        newTh.setAttribute('colspan', '{th.getAttribute("colspan")}');
-        newTh.setAttribute('rowspan', '{th.getAttribute("rowspan")}');
-        const div_many2one = `
-        <div class="o_field_widget o_field_many2one" name="${cell.name}">
-            <div class="o_field_many2one_selection">
-            <div class="o_input_dropdown" id="div_${next_cell_index}_${cell.name}">
-                <div class="o-autocomplete dropdown">
-                <input type="text" class="o-autocomplete--input o_input edit_mode"
-                        autocomplete="off" placeholder=""
-                        style="margin-top:3px!important;height: 30px!important;min-width:190px;" name="${cell.name}">
-                </div>
-                <span class="o_dropdown_button" style="top:13px!important;"></span>
-            </div>
-            </div>
-            <div class="o_field_many2one_extra"></div>
-        </div>`;
-        /*newTh.innerHTML = div_many2one;
-        th.insertAdjacentElement('afterend', newTh);
-        const dropdownDiv = newTh.querySelector(`#div_${next_cell_index}_${cell.name}`);
-        if (dropdownDiv) {
-            dropdownDiv.addEventListener('click', (ev) => {
-                this.displayMany2oneRecord(ev, cell.name, next_cell_index, cell);
-            });
-        }*/
+        
         const defaults = await this.model.orm.call(this.model.metaData.resModel, "default_get", [this.model.metaData.rowGroupBys.map(gb => gb.split(':')[0])]);
         console.log("this.model.searchParams.context",this.model.searchParams.context)
         for (const [key, val] of Object.entries(this.model.searchParams.context)) {
@@ -1158,10 +1200,23 @@ export class MatrixRenderer extends Component {
 
         const rows = document.querySelectorAll('table tbody tr');
         let row_index=0;
-        //let len_rows=this.table.rows.length-1;
+
+        let len_rows=this.table.rows.length-1;
+        let len_rows_tr =rows.length-1;
+        console.log("len_rows",len_rows);
+        console.log("len_rows_tr",len_rows_tr);
+        let rowgroupbys_length=this.model.metaData.rowGroupBys.length;
+        this.model.metaData.rowGroupBys.forEach((RowField, RowIndex) => {
+            const RowfieldName = RowField.split(':')[0];
+            const RowfieldAttrs = this.model.metaData.fieldAttrs[RowfieldName];
+            if (RowfieldAttrs && RowfieldAttrs.isInvisible) {
+                rowgroupbys_length=rowgroupbys_length-1; // Do not count invisible fields
+            }
+        });
         rows.forEach((row) => {
             let measure_name = this.table.rows[0].subGroupMeasurements[0].measure;
-            var rowgroupbys_length=this.model.metaData.rowGroupBys.length;
+            //console.log("this.model.metaData.rowGroupBys",this.model.metaData.rowGroupBys,this.table.rows[row_index]);
+
             const $row = $(`#${measure_name}_${row_index}_0`).closest('tr');
             const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length;
             const inputId = `${measure_name}_${row_index}_${len_row}`;
