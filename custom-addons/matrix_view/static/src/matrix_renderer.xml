@@ -61,7 +61,7 @@
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
-                                <th class="text-center position-relative" style="min-width:200px;">
+                                <th class="text-center position-relative" style="min-width:100px;">
                                     <span t-esc="model.metaData.fields[fieldName].string"/>
                                     <span class="o_resize position-absolute top-0 end-0 h-100"
                                             style="width: 4px; cursor: col-resize; z-index: 1;"
@@ -73,7 +73,7 @@
                         <!-- Measure headers for each column group -->
                         <t t-foreach="table.headers[table.headers.length - 1]" t-as="colGroup" t-key="'measure_' + colGroup_index">
                             <t t-foreach="model.metaData.activeMeasures" t-as="measure" t-key="measure">
-                                <th class="text-center position-relative" style="min-width:200px;">
+                                <th class="text-center position-relative" style="min-width:100px;">
                                     <span t-esc="model.metaData.measures[measure].string"/>
                                     <span class="o_resize position-absolute top-0 end-0 h-100"
                                             style="width: 4px; cursor: col-resize; z-index: 1;"
@@ -112,7 +112,7 @@
                                 <t t-if="state.isEditing and getFieldType(fieldName) === 'many2one'">
                                     <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one" 
                                         data-tooltip-delay="1000" tabindex="-1" t-att-name="fieldName" 
-                                        t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:200px;">
+                                        t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:100px;">
                                         <div t-att-name="fieldName" class="o_field_widget o_field_many2one">
                                             <div class="o_field_many2one_selection">
                                                 <div class="o_input_dropdown" t-on-click="(ev) => this.displayMany2oneRecord(ev,fieldName,row_index,row)"
@@ -147,7 +147,7 @@
                                     </td>
                                 </t>
                                 <t t-else="else">
-                                    <td class="text-left" style="min-width:200px;">
+                                    <td class="text-left" style="min-width:100px;">
                                         <t t-if="state.isEditing">
                                             <!-- Editable row group fields -->
                                             <t t-if="getFieldType(fieldName) === 'date'">
@@ -206,7 +206,7 @@
                         <!-- Measurement values -->
                         
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
-                            <td class="text-end" style="min-width:200px;"
+                            <td class="text-end" style="min-width:100px;"
                                 t-att-class="{
                                     'cursor-pointer': cell.value !== undefined,
                                     'font-weight-bold': cell.isBold

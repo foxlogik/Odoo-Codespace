@@ -13,6 +13,7 @@ export class MatrixArchParser {
             rowGroupBys: [], // store the defined group_by used on rows
             widgets: {}, // wigdets defined in the arch
             colFields: [],
+            domainFields: [],
         };
 
         visitXML(arch, (node) => {
@@ -69,6 +70,9 @@ export class MatrixArchParser {
                     }
                     if (node.hasAttribute("domain")) {
                         archInfo.fieldAttrs[fieldName].domain=node.getAttribute("domain");
+                    }
+                    if (node.getAttribute("type") === "domain") {
+                        archInfo.domainFields.push(fieldName);
                     }
                     break;
                 }
