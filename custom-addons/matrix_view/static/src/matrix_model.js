@@ -1473,7 +1473,8 @@ export class MatrixModel extends Model {
             
             if (field && field.type === 'many2one') {
                 const keys = [...tree.directSubTrees.keys()];
-                tree.sortedKeys = await this._sortIdsByModelOrder(keys, field.relation,fieldAttrs?.order);
+                //tree.sortedKeys = await this._sortIdsByModelOrder(keys, field.relation,fieldAttrs?.order);
+                tree.sortedKeys = keys;
             }
         }
         

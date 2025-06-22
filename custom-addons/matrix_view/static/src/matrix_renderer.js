@@ -1161,6 +1161,8 @@ export class MatrixRenderer extends Component {
                         let record = await this.model.orm.searchRead(fieldInfo.relation,[['id','=',defaults[fieldName]]] , ["display_name"]);
                         defaultValueLabel= record.length > 0 ? record[0].display_name : '';
                 }
+                let isReadonly=this.model.metaData.fieldAttrs[fieldName].isReadonly;
+                console.log(fieldName,"isReadonly:",isReadonly)
                 const headerRow_div_many2one = `
                 <div class="o_field_widget o_field_many2one" name="${headerRow[0].name}">
                     <div class="o_field_many2one_selection">
@@ -1168,11 +1170,12 @@ export class MatrixRenderer extends Component {
                         <div class="o-autocomplete dropdown">
                             <input type="text" class="o-autocomplete--input o_input edit_mode"
                                 autocomplete="off" placeholder="" id="${'newcol_'+headerRow[0].name+'_'+next_cell_index}"
-                                style="margin-top:3px!important;height: 30px!important;min-width:190px;" name="${headerRow[0].name}"
+                                style="margin-top:3px!important;height: 30px!important;min-width:190px;`+(isReadonly ? `background-color:#f8f9fa!important;border:none!important;` : '')+`" name="${headerRow[0].name}"
                                 value="${defaultValueLabel || ''}"
-                                data-value="${defaultValue || ''}" >
-                        </div>
-                        <span class="o_dropdown_button" style="top:13px!important;"></span>
+                                data-value="${defaultValue || ''}" `+(isReadonly ? `disabled="disabled"` : '')+`>
+                        </div>`+
+                        
+                        (!isReadonly ? `<span class="o_dropdown_button" style="top:13px!important;"></span>` : '')+`
                     </div>
                     </div>
                     <div class="o_field_many2one_extra"></div>
@@ -1216,7 +1219,7 @@ export class MatrixRenderer extends Component {
         rows.forEach((row) => {
             let measure_name = this.table.rows[0].subGroupMeasurements[0].measure;
             //console.log("this.model.metaData.rowGroupBys",this.model.metaData.rowGroupBys,this.table.rows[row_index]);
-
+            let isMeasureReadonly=this.model.metaData.fieldAttrs[measure_name].isReadOnly;
             const $row = $(`#${measure_name}_${row_index}_0`).closest('tr');
             const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length;
             const inputId = `${measure_name}_${row_index}_${len_row}`;
@@ -1231,7 +1234,7 @@ export class MatrixRenderer extends Component {
                 const $newTd = $lastTd.clone(true);
                 $newTd.empty();
                 $newTd.addClass('new_col');
-                $newTd.html(`<input type="number" class="form-control edit_mode" id="newcol_${measure_name}_${row_index}_${next_cell_index}">`);
+                $newTd.html(`<input type="number" class="form-control edit_mode" id="newcol_${measure_name}_${row_index}_${next_cell_index}"` +(isMeasureReadonly ? `disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"` : '')+`>`);
                 $lastTd.after($newTd);
             } else {
                 console.error(`Element with ID ${inputId} not found`);

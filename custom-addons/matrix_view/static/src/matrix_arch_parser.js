@@ -53,7 +53,12 @@ export class MatrixArchParser {
                         node.getAttribute("invisible") === "1"
                     ) {
                         archInfo.fieldAttrs[fieldName].isInvisible = true;
-                        //break;
+                    }
+                    if (
+                        node.getAttribute("readonly") === "True" ||
+                        node.getAttribute("readonly") === "1"
+                    ) {
+                        archInfo.fieldAttrs[fieldName].isReadonly = true;
                     }
 
                     if (node.hasAttribute("interval")) {
@@ -81,6 +86,7 @@ export class MatrixArchParser {
                     if (node.getAttribute("type") === "domain") {
                         archInfo.domainFields.push(fieldName);
                     }
+                    
                     break;
                 }
             }

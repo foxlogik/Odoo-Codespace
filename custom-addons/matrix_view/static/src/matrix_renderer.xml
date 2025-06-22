@@ -107,7 +107,7 @@
                         <t t-set="record_line_id" t-value="row_index"/>
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
-
+                            <t t-set="isReadonly" t-value="model.metaData.fieldAttrs[fieldName].isReadonly"/>
                             <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
                                 <t t-if="state.isEditing and getFieldType(fieldName) === 'many2one'">
                                     <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one" 
@@ -119,24 +119,49 @@
                                                     t-att-id="'div_'+row_index +'_' +fieldName">
                                                     <div class="o-autocomplete dropdown">
                                                         <t t-if="row.isNew">
-                                                            <input type="text" class="o-autocomplete--input o_input edit_mode" 
-                                                                t-att-name="fieldName"
-                                                                autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
-                                                                t-att-value="row.data[fieldName]?.label || ''"
-                                                                t-att-data-value="row.data[fieldName]?.value ||''" 
-                                                                style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
-                                                            />
+                                                            <t t-if="isReadonly">
+                                                                <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                                    t-att-name="fieldName"
+                                                                    autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
+                                                                    t-att-value="row.data[fieldName]?.label || ''"
+                                                                    t-att-data-value="row.data[fieldName]?.value ||''" 
+                                                                    style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                    disabled="disabled"
+                                                                />
+                                                            </t>
+                                                            <t t-else="">
+                                                                <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                                    t-att-name="fieldName"
+                                                                    autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
+                                                                    t-att-value="row.data[fieldName]?.label || ''"
+                                                                    t-att-data-value="row.data[fieldName]?.value ||''" 
+                                                                    style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                />
+                                                            </t>
                                                         </t>
                                                         <t t-else="">
+                                                            <t t-if="isReadonly">
                                                                 <input type="text" class="o-autocomplete--input o_input edit_mode" 
-                                                                t-att-name="fieldName"
-                                                                autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
-                                                                t-att-value="row.data[fieldName]?.label || ''"
-                                                                style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
-                                                            />
+                                                                    t-att-name="fieldName"
+                                                                    autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
+                                                                    t-att-value="row.data[fieldName]?.label || ''"
+                                                                    style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                    disabled="disabled"
+                                                                />
+                                                            </t>
+                                                            <t t-else="">
+                                                                <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                                    t-att-name="fieldName"
+                                                                    autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
+                                                                    t-att-value="row.data[fieldName]?.label || ''"
+                                                                    style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                />
+                                                            </t>
                                                         </t>
                                                     </div>
-                                                    <span class="o_dropdown_button" style="top:13px!important;"></span>
+                                                    <t t-if="!isReadonly">
+                                                        <span class="o_dropdown_button" style="top:13px!important;"></span>
+                                                    </t>
                                                 </div>
                                                 <!--<button type="button" class="btn btn-link text-action oi o_external_button oi-arrow-right" 
                                                     tabindex="-1" draggable="false" aria-label="Internal link" data-tooltip="Internal link"
@@ -152,44 +177,99 @@
                                             <!-- Editable row group fields -->
                                             <t t-if="getFieldType(fieldName) === 'date'">
                                                 <t t-if="row.isNew">
-                                                    <input type="date" t-att-name="fieldName"
-                                                        t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
-                                                        t-att-data-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))"
-                                                        t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                        class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"/>
+                                                    <t t-if="isReadonly">
+                                                        <input type="date" t-att-name="fieldName"
+                                                            t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
+                                                            t-att-data-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                            disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <input type="date" t-att-name="fieldName"
+                                                            t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
+                                                            t-att-data-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                            />
+                                                    </t>
+                                                    
                                                 </t>
                                                 <t t-else="">
-                                                    <input type="date" t-att-name="fieldName"
+                                                    <t t-if="isReadonly">
+                                                        <input type="date" t-att-name="fieldName"
                                                         t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
                                                         t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                        class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"/>
+                                                        class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                        disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <input type="date" t-att-name="fieldName"
+                                                            t-att-value="formatDate(row.data[fieldName]?.value,getFieldType(fieldName))" 
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                        />
+                                                    </t>
                                                 </t>
                                             </t>
                                             
                                             <t t-elif="getFieldType(fieldName) === 'selection'">
-                                                <select class="form-select edit_mode o_list_selection" t-att-name="fieldName"
-                                                        t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)" t-att-id="fieldName+'_'+record_line_id">
-                                                    <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
-                                                        <option t-att-value="option[0]"
-                                                                t-att-selected="option[0] === row.data[fieldName]?.value">
-                                                            <t t-esc="option[1]"/>
-                                                        </option>
-                                                    </t>
-                                                </select>
+                                                <t t-if="isReadonly">
+                                                    <select class="form-select edit_mode o_list_selection" t-att-name="fieldName" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)" t-att-id="fieldName+'_'+record_line_id">
+                                                        <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
+                                                            <option t-att-value="option[0]"
+                                                                    t-att-selected="option[0] === row.data[fieldName]?.value">
+                                                                <t t-esc="option[1]"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </t>
+                                                <t t-else="">
+                                                    <select class="form-select edit_mode o_list_selection" t-att-name="fieldName"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)" t-att-id="fieldName+'_'+record_line_id">
+                                                        <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
+                                                            <option t-att-value="option[0]"
+                                                                    t-att-selected="option[0] === row.data[fieldName]?.value">
+                                                                <t t-esc="option[1]"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </t>
                                             </t>
                                             <t t-else="">
                                                 <t t-if="row.isNew">
-                                                    <input type="text" t-att-name="fieldName"
+                                                    <t t-if="isReadonly">
+                                                        <input type="text" t-att-name="fieldName"
+                                                            t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
+                                                            t-att-data-value="row.data[fieldName]?.value ||''"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode"
+                                                            disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <input type="text" t-att-name="fieldName"
                                                         t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
                                                         t-att-data-value="row.data[fieldName]?.value ||''"
                                                         t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                        class="form-control edit_mode"/>
+                                                        class="form-control edit_mode"
+                                                        />
+                                                    </t>
                                                 </t>
                                                 <t t-else="">
-                                                    <input type="text" t-att-name="fieldName"
-                                                        t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
-                                                        t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                        class="form-control edit_mode"/>
+                                                    <t t-if="isReadonly">
+                                                        <input type="text" t-att-name="fieldName"
+                                                            t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode"
+                                                            disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <input type="text" t-att-name="fieldName"
+                                                            t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
+                                                            t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
+                                                            class="form-control edit_mode"/>
+                                                    </t>
                                                 </t>
                                             </t>
                                         </t>
@@ -197,7 +277,6 @@
                                             <!-- Non-edit mode display -->
                                             <span t-esc="row.data[fieldName]?.label"/>
                                         </t>
-                                        
                                     </td>
                                 </t>
                             </t>
@@ -206,6 +285,7 @@
                         <!-- Measurement values -->
                         
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
+                            <t t-set="isReadonlyMeasure" t-value="model.metaData.fieldAttrs[cell.measure].isReadOnly"/>
                             <td class="text-end" style="min-width:100px;"
                                 t-att-class="{
                                     'cursor-pointer': cell.value !== undefined,
@@ -214,71 +294,72 @@
                                 <t t-if="state.isEditing">
                                     <t t-if="getFieldType(cell.measure) === 'float' or getFieldType(cell.measure) === 'integer' or getFieldType(cell.measure) === 'monetary'">
                                         <t t-if="cell.value">
-                                            <input type="number"
+                                            <t t-if="isReadonlyMeasure">
+                                                <input type="number"
+                                                    t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                    t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
+                                                    class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                            </t>
+                                            <t t-else="">
+                                                <input type="number"
                                                 t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
                                                 class="form-control edit_mode"/>
+                                            </t>
                                         </t>
                                         <!--<t t-elif="!cell.id">
                                             <input type="number" class="form-control edit_mode"/>
                                         </t>-->
                                         <t t-else="">
                                             <!--<t t-esc="'-'"/>-->
-                                            <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
+                                            <t t-if="isReadonlyMeasure">
+                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                    t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
+                                                    disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                            </t>
+                                            <t t-else="">
+                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                    t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
+                                            </t>
                                         </t>
 
                                     </t>
                                     <t t-else="">
                                         <t t-if="cell.value">
-                                            <input type="text"
+                                            <t t-if="isReadonlyMeasure">
+                                                <input type="text"
+                                                t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
+                                                class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                            </t>
+                                            <t t-else="">
+                                                <input type="text"
                                                 t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
                                                 class="form-control edit_mode"/>
+                                            </t>
                                         </t>
                                         
                                         <t t-else="">
-                                            <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                            <t t-if="isReadonlyMeasure">
+                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
+                                                disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                            </t>
+                                            <t t-else="">
+                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
+                                            </t>
+                                            
                                         </t>
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <t t-esc="cell.value || '-'" 
-                                        />
+                                    <t t-esc="cell.value || '-'"/>
                                 </t>
                             </td>
                         </t>
-                        <!--<td t-foreach="model.data.dynamicColumns ? getDynamicColumns() : []" t-as="colKey" t-key="'dynamic_col_' + colKey">
-                            <t t-set="colData" t-value="row[colKey]"/>
-                            <t t-if="colData">
-                                <t t-if="state.isEditing">
-                                    <t t-switch="colData.fieldType">
-                                        <t t-case="'many2one'">
-                                            <div class="o_input_dropdown">
-                                                <input type="text" 
-                                                    t-att-value="colData.value?.display_name"
-                                                    t-on-click="(ev) => displayMany2oneRecord(ev, colData)"/>
-                                            </div>
-                                        </t>
-                                        <t t-case="'date'">
-                                            <input type="date" 
-                                                t-att-value="colData.value"
-                                                t-on-change="(ev) => updateCellValue(row.id, colKey, ev.target.value)"/>
-                                        </t>
-                                        <t t-case="'float'">
-                                            <input type="number" step="0.01"
-                                                t-att-value="colData.value"
-                                                t-on-change="(ev) => updateCellValue(row.id, colKey, ev.target.value)"/>
-                                        </t>
-                                    </t>
-                                </t>
-                                <t t-else="">
-                                    <span t-esc="colData.value?.display_name || colData.value || '-'"/>
-                                </t>
-                            </t>
-                            
-                        </td>-->
+                        
                     </tr>
                 </tbody>
             </table>
