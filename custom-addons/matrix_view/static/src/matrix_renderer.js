@@ -764,6 +764,9 @@ export class MatrixRenderer extends Component {
                 if (fieldInfo && fieldInfo.type === 'date') {
                     value = this.formatDate(value, 'date');
                 }
+                else if (fieldInfo && fieldInfo.type === 'datetime') {
+                    value = this.formatDate(value, 'datetime');
+                }
                 return [fieldName, '=', value];
             });
         };
@@ -821,7 +824,7 @@ export class MatrixRenderer extends Component {
                                     }
                                 }
                                 if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                    gbys_new_value = this.formatDate(gbys_new_value, 'date');
+                                    gbys_new_value = this.formatDate(gbys_new_value, fieldInfo.type);
                                 }
                                 
                                 tocreate[fieldName] = gbys_new_value;
@@ -833,7 +836,7 @@ export class MatrixRenderer extends Component {
                                 const colfieldInfo = this.model.metaData.fields[colfieldName];
                                 var col_old_value = cell.groupId[1][colfield_index];
                                 if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                    col_old_value = this.formatDate(col_old_value, 'date');
+                                    col_old_value = this.formatDate(col_old_value, colfieldInfo.type);
                                 }
                                 
                                 tocreate[colfieldName] = col_old_value;
@@ -875,6 +878,10 @@ export class MatrixRenderer extends Component {
                                                 gbys_new_value = this.formatDate(gbys_new_value, 'date');
                                                 gbys_old_value = this.formatDate(gbys_old_value, 'date');
                                             }
+                                            else if (fieldInfo && fieldInfo.type === 'datetime') {
+                                                gbys_new_value = this.formatDate(gbys_new_value, 'datetime');
+                                                gbys_old_value = this.formatDate(gbys_old_value, 'datetime');
+                                            }
                                             else if (fieldInfo && fieldInfo.type === 'many2one') {
                                                 gbys_new_value = parseInt(gbys_new_value);
                                             }
@@ -884,6 +891,10 @@ export class MatrixRenderer extends Component {
                                             if (fieldInfo && fieldInfo.type === 'date') {
                                                 gbys_new_value = this.formatDate(gbys_new_value, 'date');
                                                 gbys_old_value = this.formatDate(gbys_old_value, 'date');
+                                            }
+                                            else if (fieldInfo && fieldInfo.type === 'datetime') {
+                                                gbys_new_value = this.formatDate(gbys_new_value, 'datetime');
+                                                gbys_old_value = this.formatDate(gbys_old_value, 'datetime');
                                             }
                                             else if (fieldInfo && fieldInfo.type === 'many2one') {
                                                 gbys_new_value = parseInt(gbys_new_value);
@@ -895,7 +906,7 @@ export class MatrixRenderer extends Component {
                                                 const colfieldInfo = this.model.metaData.fields[colfieldName];
                                                 var col_old_value = rec[colfieldName];
                                                 if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                                    col_old_value = this.formatDate(col_old_value, 'date');
+                                                    col_old_value = this.formatDate(col_old_value, colfieldInfo.type);
                                                 }
                                                 else if (colfieldInfo.type === 'many2one') {
                                                     col_old_value = rec[colfieldName][0];
@@ -935,6 +946,10 @@ export class MatrixRenderer extends Component {
                                             gbys_new_value = this.formatDate(gbys_new_value, 'date');
                                             gbys_old_value = this.formatDate(gbys_old_value, 'date');
                                         }
+                                        else if (fieldInfo && fieldInfo.type === 'datetime') {
+                                            gbys_new_value = this.formatDate(gbys_new_value, 'datetime');
+                                            gbys_old_value = this.formatDate(gbys_old_value, 'datetime');
+                                        }
                                         else if (fieldInfo && fieldInfo.type === 'many2one') {
                                             gbys_new_value = parseInt(gbys_new_value);
                                         }
@@ -944,6 +959,10 @@ export class MatrixRenderer extends Component {
                                         if (fieldInfo && fieldInfo.type === 'date') {
                                             gbys_new_value = this.formatDate(gbys_new_value, 'date');
                                             gbys_old_value = this.formatDate(gbys_old_value, 'date');
+                                        }
+                                        else if (fieldInfo && fieldInfo.type === 'datetime') {
+                                            gbys_new_value = this.formatDate(gbys_new_value, 'datetime');
+                                            gbys_old_value = this.formatDate(gbys_old_value, 'datetime');
                                         }
                                         else if (fieldInfo && fieldInfo.type === 'many2one') {
                                             gbys_new_value = parseInt(gbys_new_value);
@@ -955,7 +974,7 @@ export class MatrixRenderer extends Component {
                                             const colfieldInfo = this.model.metaData.fields[colfieldName];
                                             var col_old_value = records[0][colfieldName];
                                             if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                                col_old_value = this.formatDate(col_old_value, 'date');
+                                                col_old_value = this.formatDate(col_old_value, colfieldInfo.type);
                                             }
                                             else if (colfieldInfo.type === 'many2one') {
                                                 col_old_value = records[0][colfieldName][0];
@@ -982,7 +1001,7 @@ export class MatrixRenderer extends Component {
                                     const fieldInfo = this.model.metaData.fields[fieldName];
                                     var gbys_new_value = cell.groupId[0][row_field_index];
                                     if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                        gbys_new_value = this.formatDate(gbys_new_value, 'date');
+                                        gbys_new_value = this.formatDate(gbys_new_value, fieldInfo.type);
                                     }
                                     
                                     tocreate[fieldName] = gbys_new_value;
@@ -994,7 +1013,7 @@ export class MatrixRenderer extends Component {
                                     const colfieldInfo = this.model.metaData.fields[colfieldName];
                                     var col_old_value = cell.groupId[1][colfield_index];
                                     if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                                        col_old_value = this.formatDate(col_old_value, 'date');
+                                        col_old_value = this.formatDate(col_old_value, colfieldInfo.type);
                                     }
                                     
                                     tocreate[colfieldName] = col_old_value;
@@ -1032,7 +1051,7 @@ export class MatrixRenderer extends Component {
                         //var gbys_new_value = $("#"+fieldName+"_"+row_index);
                         var gbys_new_value=newcol_cell.groupId[0][newcol_row_index];
                         if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                            gbys_new_value = self.formatDate(gbys_new_value, 'date');
+                            gbys_new_value = self.formatDate(gbys_new_value, fieldInfo.type);
                         }
                         
                         newcol_tocreate[fieldName] = gbys_new_value;
@@ -1043,7 +1062,7 @@ export class MatrixRenderer extends Component {
                         const colfieldInfo = self.model.metaData.fields[colfieldName];
                         var col_old_value = $('#newcol_'+colfieldName+'_'+firstchild_position).attr('data-value');
                         if (colfieldInfo && (colfieldInfo.type === 'date' || colfieldInfo.type === 'datetime')) {
-                            col_old_value = self.formatDate(col_old_value, 'date');
+                            col_old_value = self.formatDate(col_old_value, colfieldInfo.type);
                         }
                         
                         newcol_tocreate[colfieldName] = col_old_value;

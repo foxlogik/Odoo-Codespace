@@ -18,13 +18,13 @@
         <field name="name">analytic.line.matrix.model</field>
         <field name="model">account.analytic.line</field>
         <field name="arch" type="xml">
-            <matrix string="Analytic Matrix View" default_order="date desc" no_total="1">
+            <matrix string="Analytic Matrix View" default_order="date_time desc" no_total="1">
                 
-                <field name="date" type="row" widget="date" readonly="1"/>
+                <field name="date_time" type="row" widget="date" readonly="0"/>
                 <field name="partner_id" type="row" context="{'default_partner_id':10}"/>
                 <field name="account_domain" type="domain" invisible="1"/>
                 <field name="product_id" type="col" domain="[('id','in',product_domain)]" readonly="0"/>
-                <field name="account_id" type="row" domain="[('partner_id','=',partner_id), ('id','in',[8,16,11])]" readonly="0"/>
+                <field name="account_id" type="row" domain="['|', ('partner_id','=',partner_id), ('partner_ids','in',partner_id)]" readonly="0"/>
                 <field name="move_line_id" invisible="1"/>
                 <field name="product_domain" type="domain" invisible="1"/>
                 <!--<field name="analytic_distribution" type="col" widget="analytic_distribution"/>-->
