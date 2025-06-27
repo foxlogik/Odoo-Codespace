@@ -25,7 +25,7 @@
                 <field name="account_domain" type="domain" invisible="1"/>
                 <field name="product_id" type="col" domain="[('id','in',product_domain)]" readonly="0"/>
                 <field name="account_id" type="row" domain="['|', ('partner_id','=',partner_id), ('partner_ids','in',partner_id)]" readonly="0" invisible="1"/>
-                <field name="move_line_id" invisible="1"/>
+                <field name="move_line_id" type="row" invisible="1"/>
                 <field name="product_domain" type="domain" invisible="1"/>
                 <!--<field name="analytic_distribution" type="col" widget="analytic_distribution"/>-->
                 <field name="amount" type="measure"/>

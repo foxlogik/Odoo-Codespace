@@ -817,6 +817,7 @@ export class MatrixRenderer extends Component {
                                 const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
                                 console.log(fieldAttrs, fieldAttrs.isInvisible)
                                 if (fieldAttrs && fieldAttrs.isInvisible === true) {
+                                    console.log("row.data[fieldName]?.value", row.data[fieldName]?.value);
                                     tocreate[fieldName] = row.data[fieldName]?.value || '';
                                 }
                                 else {
@@ -832,8 +833,9 @@ export class MatrixRenderer extends Component {
                                     if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
                                         gbys_new_value = this.formatDate(gbys_new_value, fieldInfo.type);
                                     }
+                                    tocreate[fieldName] = gbys_new_value;
                                 }
-                                tocreate[fieldName] = gbys_new_value;
+                                
                                 row_field_index++;
                             });
                             var colfield_index=0
