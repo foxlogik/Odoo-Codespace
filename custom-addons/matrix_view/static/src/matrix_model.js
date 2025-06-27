@@ -209,7 +209,7 @@ export class MatrixModel extends Model {
                 label = formatDate(value, field.type);
                 value = formatDate(value, field.type);
             }
-            
+            console.log(`Creating empty row data for field: ${fieldName}, value: ${value}, label: ${label}`);
             // Initialize with proper structure
             data[fieldName] = {
                 //value: this._getDefaultValueForField(field),

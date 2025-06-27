@@ -194,7 +194,6 @@ export class MatrixRenderer extends Component {
             return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
         }
         else {
-            //return formattedDate.toISOString().split('T')[0];
             return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
         }
         
@@ -805,6 +804,7 @@ export class MatrixRenderer extends Component {
                     const tocreate = {};
                     if (cell.groupId !== undefined && cell.groupId !== null) {
                         if (row.isNew){
+                            console.log("row is new, creating new record for cell", row.data);
                             const fieldName = cell.measure;
                             const new_value = $('#' + fieldName + '_' + row_index + '_' + cell_index).val();
                             if (new_value !== undefined && new_value !== null && new_value != 0){
@@ -814,19 +814,25 @@ export class MatrixRenderer extends Component {
                             this.model.metaData.rowGroupBys.forEach(field => {
                                 const fieldName = field.split(':')[0];
                                 const fieldInfo = this.model.metaData.fields[fieldName];
-                                var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
-                                if (!gbys_new_value || gbys_new_value === undefined || gbys_new_value === null) {
-                                    if (fieldInfo && fieldInfo.type === 'many2one') {
-                                        gbys_new_value = row.data[fieldName]?.id || '';
+                                const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
+                                console.log(fieldAttrs, fieldAttrs.isInvisible)
+                                if (fieldAttrs && fieldAttrs.isInvisible === true) {
+                                    tocreate[fieldName] = row.data[fieldName]?.value || '';
+                                }
+                                else {
+                                    var gbys_new_value = $('#' + fieldName + '_' + row_index).attr('data-value');
+                                    if (!gbys_new_value || gbys_new_value === undefined || gbys_new_value === null) {
+                                        if (fieldInfo && fieldInfo.type === 'many2one') {
+                                            gbys_new_value = row.data[fieldName]?.id || '';
+                                        }
+                                        else {
+                                            gbys_new_value = row.data[fieldName]?.value || '';
+                                        }
                                     }
-                                    else {
-                                        gbys_new_value = row.data[fieldName]?.value || '';
+                                    if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
+                                        gbys_new_value = this.formatDate(gbys_new_value, fieldInfo.type);
                                     }
                                 }
-                                if (fieldInfo && (fieldInfo.type === 'date' || fieldInfo.type === 'datetime')) {
-                                    gbys_new_value = this.formatDate(gbys_new_value, fieldInfo.type);
-                                }
-                                
                                 tocreate[fieldName] = gbys_new_value;
                                 row_field_index++;
                             });
@@ -1380,57 +1386,6 @@ export class MatrixRenderer extends Component {
         };
         this.openView(this.model.getGroupDomain(group), this.views, context);
     }
-
-
-// Add default values for required fields not in the changes
-_addDefaultValues(changes, requiredFields) {
-    const completeChanges = { ...changes };
-    
-    // Check for any required fields not in our changes
-    const missingRequired = requiredFields.filter(
-        field => !(field in completeChanges)
-    );
-    
-    // Set default values for missing required fields
-    missingRequired.forEach(field => {
-        completeChanges[field] = this._getDefaultValueForField(field);
-    });
-    
-    return completeChanges;
-}
-
-// Get sensible default values for different field types
-_getDefaultValueForField(fieldName) {
-    const field = this.model.metaData.fields[fieldName];
-    if (!field) return false; // Fallback
-    
-    switch (field.type) {
-        case 'char':
-            return '-';
-        case 'text':
-            return '-';
-        case 'integer':
-            return 0;
-        case 'float':
-            return 0;
-        case 'monetary':
-            return 0;
-        case 'boolean':
-            return false;
-        case 'date':
-            return moment().format('YYYY-MM-DD');
-        case 'datetime':
-            return moment().format('YYYY-MM-DD HH:mm:ss');
-        case 'many2one':
-            return false; // False is valid for unset many2one
-        case 'selection':
-            const options = field.selection || [];
-            return options.length ? options[0][0] : false;
-        default:
-            return false;
-    }
-}
-
    
 }
 MatrixRenderer.template = "matrix_view.MatrixRenderer";
