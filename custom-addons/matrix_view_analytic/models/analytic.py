@@ -21,6 +21,11 @@ class AnalyticLine(models.Model):
         compute="_compute_analytic_distribution", store=True, copy=True, readonly=False,
     )
     date_time = fields.Datetime('DateTime', default=fields.Datetime.now,readonly=False)
+    note = fields.Text(
+        'Note',
+        help="Optional description of the analytic line.",
+        readonly=False,
+    )
     
     @api.depends('account_id', 'company_id')
     def _compute_analytic_distribution(self):

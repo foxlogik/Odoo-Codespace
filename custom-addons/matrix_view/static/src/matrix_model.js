@@ -825,6 +825,7 @@ export class MatrixModel extends Model {
     _getGroupLabels(group, groupBys, config) {
         return groupBys.map((gb) => {
             const groupBy = this._normalize(gb);
+            console.log(`Sanitizing label for groupBy: ${groupBy}, value: ${group[groupBy]} in group:`, group, config);
             return this._sanitizeLabel(group[groupBy], groupBy, config);
         });
     }
@@ -1186,7 +1187,9 @@ export class MatrixModel extends Model {
         
         const flattenTree = (node, currentRow = {}) => {
             const group = node.root;
-            
+            console.log("Flattening node:", group);
+            console.log("Row group values:", group.values);
+            console.log("Current row before adding group values:", currentRow);
             // Add current level's data to the row
             if (group.values.length > 0) {
                 const fieldName = rowGroupBys[group.values.length - 1].split(':')[0];
@@ -1195,7 +1198,8 @@ export class MatrixModel extends Model {
                     label: group.labels[group.labels.length - 1]
                 };
             }
-
+            console.log("Current row after adding group values:", currentRow);
+            console.log("Node directSubTrees:", node.directSubTrees);
             if (node.directSubTrees.size === 0) {
                 // Leaf node: create a row
                 const row = {
@@ -1233,8 +1237,11 @@ export class MatrixModel extends Model {
             } else {
                 // Continue traversing the tree
                 const keys = node.sortedKeys || [...node.directSubTrees.keys()];
+                console.log("Traversing keys:", keys);
                 keys.forEach(key => {
+                    console.log("Processing key:", key);
                     const subTree = node.directSubTrees.get(key);
+                    console.log("Subtree:", subTree);
                     flattenTree(subTree, {...currentRow});
                 });
             }
@@ -1396,15 +1403,16 @@ export class MatrixModel extends Model {
             groupColLabels = root.labels;
         }
 
-        groupSubdivisions.forEach((groupSubdivision) => {
-            groupSubdivision.subGroups.forEach((subGroup) => {
+        //groupSubdivisions.forEach((groupSubdivision) => {
+        //    groupSubdivision.subGroups.forEach((subGroup) => {
+        for (const groupSubdivision of groupSubdivisions) {
+            for (const subGroup of groupSubdivision.subGroups) {
                 const rowValues = groupRowValues.concat(
                     this._getGroupValues(subGroup, groupSubdivision.rowGroupBy)
                 );
                 const rowLabels = groupRowLabels.concat(
                     this._getGroupLabels(subGroup, groupSubdivision.rowGroupBy, config)
                 );
-
                 const colValues = groupColValues.concat(
                     this._getGroupValues(subGroup, groupSubdivision.colGroupBy)
                 );
@@ -1418,8 +1426,11 @@ export class MatrixModel extends Model {
                 if (colValues.length && !rowValues.length) {
                     this._addGroup(data.colGroupTree, colLabels, colValues);
                 }
-
                 const key = JSON.stringify([rowValues, colValues]);
+                groupSubdivision.group.rowValues = rowValues;
+                groupSubdivision.group.rowLabels = rowLabels;
+                groupSubdivision.group.colValues = colValues;
+                groupSubdivision.group.colLabels = colLabels;
                 const originIndex = groupSubdivision.group.originIndex;
 
                 if (!(key in data.measurements)) {
@@ -1447,8 +1458,8 @@ export class MatrixModel extends Model {
                 if (subGroup.__domain) {
                     data.groupDomains[key][originIndex] = subGroup.__domain;
                 }
-            });
-        });
+            }
+        }
         if (metaData.sortedColumn) {
             this._sortRows(metaData.sortedColumn, config);
         }
@@ -1583,7 +1594,7 @@ export class MatrixModel extends Model {
     async _subdivideGroup(group, divisors, config) {
         const { data, metaData } = config;
         const key = JSON.stringify([group.rowValues, group.colValues]);
-
+        console.log("subdivideGroup", key, group.rowValues, group.colValues, divisors);
         const proms = metaData.origins.reduce((acc, origin, originIndex) => {
             // if no information on group content is available, we fetch data.
             // if group is known to be empty for the given origin,
