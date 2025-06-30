@@ -1522,7 +1522,7 @@ export class MatrixModel extends Model {
     }
 
     _getEmptyGroupLabel(fieldName) {
-        return _t("None");
+        return _t("");
     }
 
     /**
