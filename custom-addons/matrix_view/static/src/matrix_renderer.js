@@ -177,19 +177,8 @@ export class MatrixRenderer extends Component {
         }
     }
     formatDate(value, fieldType) {
-        if (!value) {
-            return "";
-        }
-        const formattedDate = new Date(value);
-        const pad = (n) => String(n).padStart(2, '0');
-        if (fieldType === 'datetime') {
-            //return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
-            return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
-        }
-        else {
-            return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
-        }
-        
+        //return value;
+        return this.model.formatDateModel(value, fieldType);
     }
     /**
      * Get the formatted value of the cell.

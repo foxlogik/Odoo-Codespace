@@ -178,7 +178,7 @@
                                             <t t-if="getFieldType(fieldName) === 'date' || getFieldType(fieldName) === 'datetime' || model.metaData.widgets[fieldName] === 'date'">
                                                 <t t-if="row.isNew">
                                                     <t t-if="isReadonly">
-                                                        <input t-att-type="getFieldType(fieldName) === 'datetime' and model.metaData.widgets[fieldName] !== 'date'?'datetime-local':'date'" t-att-name="fieldName"
+                                                        <input type="date" t-att-name="fieldName"
                                                             t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                             t-att-data-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))"
                                                             t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
@@ -186,7 +186,7 @@
                                                             disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
                                                     </t>
                                                     <t t-else="">
-                                                        <input t-att-type="getFieldType(fieldName) === 'datetime' and model.metaData.widgets[fieldName] !== 'date'?'datetime-local':'date'" t-att-name="fieldName"
+                                                        <input type="date" t-att-name="fieldName"
                                                             t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                             t-att-data-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))"
                                                             t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
@@ -197,14 +197,14 @@
                                                 </t>
                                                 <t t-else="">
                                                     <t t-if="isReadonly">
-                                                        <input t-att-type="getFieldType(fieldName) === 'datetime' and model.metaData.widgets[fieldName] !== 'date'?'datetime-local':'date'" t-att-name="fieldName"
+                                                        <input type="date" t-att-name="fieldName"
                                                         t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                         t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
                                                         class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
                                                         disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
                                                     </t>
                                                     <t t-else="">
-                                                        <input t-att-type="getFieldType(fieldName) === 'datetime' and model.metaData.widgets[fieldName] !== 'date'?'datetime-local':'date'" t-att-name="fieldName"
+                                                        <input type="date" t-att-name="fieldName"
                                                             t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                             t-on-change="(ev) => onFieldEdit(fieldName+'_'+record_line_id,row)"
                                                             class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"

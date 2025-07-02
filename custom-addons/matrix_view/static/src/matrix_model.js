@@ -8,7 +8,23 @@ import { DEFAULT_INTERVAL } from "@web/search/utils/dates";
 import { Model } from "@web/model/model";
 import { computeReportMeasures, processMeasure } from "@web/views/utils";
 import { useService } from "@web/core/utils/hooks";
-
+import { useDateTimePicker } from "@web/core/datetime/datetime_hook";
+import {
+    areDatesEqual,
+    deserializeDate,
+    deserializeDateTime,
+    formatDate,
+    formatDateTime,
+    today,
+    parseDate,
+    parseDateTime,
+} from "@web/core/l10n/dates";
+import { localization } from "@web/core/l10n/localization";
+const { DateTime } = luxon;
+/*const MONTHS = {
+    Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+    Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12
+};*/
 /**
  * @param {number} value
  * @param {number} comparisonValue
@@ -29,20 +45,7 @@ function computeVariation(value, comparisonValue) {
     }
     return (value - comparisonValue) / Math.abs(comparisonValue);
 }
-function formatDate(value, fieldType) {
-    if (!value) return '';
-    const formattedDate = new Date(value);
-    const pad = (n) => String(n).padStart(2, '0');
-    if (fieldType === 'datetime') {
-        //return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
-        return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
-    }
-    else {
-        //return formattedDate.toISOString().split('T')[0];
-        return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
-    }
-    
-}
+
 
 /**
  * @typedef Meta
@@ -159,7 +162,71 @@ export class MatrixModel extends Model {
     //--------------------------------------------------------------------------
     // Public
     //--------------------------------------------------------------------------
-    
+    // formatDateModel(value, fieldType) {
+    //     // if (!value) return '';
+    //     //  const date = new Date(value);
+    //     //  if (fieldType === 'datetime') {
+    //     //      return formatDateTime(deserializeDateTime(date), { format: localization.dateFormat });
+    //     //  } else {
+    //     //      return formatDate(deserializeDate(date), { format: localization.dateFormat });
+    //     //  }
+     
+    //     // if (!value) return '';
+    //     // console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
+    //     // //const dateTimePicker = useDateTimePicker();
+    //     // value=new Date(value);
+    //     // const dateFormatted = value? fieldType === "date"? formatDate(deserializeDate(value)): formatDateTime(deserializeDateTime(value)): "";
+    //     // console.log(`Formatted date: ${dateFormatted}`);
+    //     // //const dateTimePickerFormatted = dateTimePicker.formatDate(deserializeDate(value));
+    //     // //console.log(`DateTimePicker formatted date: ${dateTimePickerFormatted}`);
+    //     // return dateFormatted;
+    //     // if (fieldType === 'date') {
+    //     //     return dateTimePicker.formatDate(deserializeDate(value));
+    //     // }
+    //     // if (fieldType === 'datetime') {
+    //     //     return dateTimePicker.formatDateTime(deserializeDateTime(value));
+    //     // }
+    //     // return 
+    //     if (!value) return '';
+    //     console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
+    //     let formattedDate = value;
+    //     let dateValue = value.split(' ');
+    //     console.log(`Parsed date value: ${dateValue}`);
+    //     if (dateValue.length > 1) {
+    //         formattedDate = new Date(dateValue[2], MONTHS[dateValue[1]], dateValue[0]);
+    //     }
+    //     console.log(`Formatted date: ${formattedDate}`);
+    //     const pad = (n) => String(n).padStart(2, '0');
+    //     if (fieldType === 'datetime') {
+    //         try{
+    //             return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+    //         } catch (error) {
+    //             return value;
+    //         }
+    //         //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
+    //     }
+    //     else {
+    //         try{
+    //             return formattedDate.toISOString().split('T')[0];
+    //         } catch (error) {
+    //             return value;
+    //         }
+    //         //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
+    //     }
+    // }
+    formatDateModel(value, fieldType) {
+        if (!value) return '';
+        const formattedDate = new Date(value);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (fieldType === 'datetime') {
+            return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+            //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
+        }
+        else {
+            return formattedDate.toISOString().split('T')[0];
+            //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
+        }
+    }
     async addLine() {
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
@@ -206,8 +273,8 @@ export class MatrixModel extends Model {
                 label= record.length > 0 ? record[0].display_name : '';
             }
             else if (field.type === 'date' || field.type === 'datetime') {
-                label = formatDate(value, field.type);
-                value = formatDate(value, field.type);
+                label = this.formatDateModel(value, field.type);
+                value = this.formatDateModel(value, field.type);
             }
             console.log(`Creating empty row data for field: ${fieldName}, value: ${value}, label: ${label}`);
             // Initialize with proper structure
@@ -1563,7 +1630,7 @@ export class MatrixModel extends Model {
             metaData.fields[fieldName] &&
             ["date", "datetime"].includes(metaData.fields[fieldName].type)
         ){
-            value =formatDate(value,metaData.fields[fieldName].type)
+            value =this.formatDateModel(value,metaData.fields[fieldName].type)
         }
         return value;
     }
