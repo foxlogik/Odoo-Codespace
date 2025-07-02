@@ -21,10 +21,10 @@ import {
 } from "@web/core/l10n/dates";
 import { localization } from "@web/core/l10n/localization";
 const { DateTime } = luxon;
-/*const MONTHS = {
-    Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
-    Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12
-};*/
+const MONTHS = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+};
 /**
  * @param {number} value
  * @param {number} comparisonValue
@@ -162,69 +162,82 @@ export class MatrixModel extends Model {
     //--------------------------------------------------------------------------
     // Public
     //--------------------------------------------------------------------------
-    // formatDateModel(value, fieldType) {
-    //     // if (!value) return '';
-    //     //  const date = new Date(value);
-    //     //  if (fieldType === 'datetime') {
-    //     //      return formatDateTime(deserializeDateTime(date), { format: localization.dateFormat });
-    //     //  } else {
-    //     //      return formatDate(deserializeDate(date), { format: localization.dateFormat });
-    //     //  }
+    /*formatDateModel(value, fieldType) {
+        // if (!value) return '';
+        //  const date = new Date(value);
+        //  if (fieldType === 'datetime') {
+        //      return formatDateTime(deserializeDateTime(date), { format: localization.dateFormat });
+        //  } else {
+        //      return formatDate(deserializeDate(date), { format: localization.dateFormat });
+        //  }
      
-    //     // if (!value) return '';
-    //     // console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
-    //     // //const dateTimePicker = useDateTimePicker();
-    //     // value=new Date(value);
-    //     // const dateFormatted = value? fieldType === "date"? formatDate(deserializeDate(value)): formatDateTime(deserializeDateTime(value)): "";
-    //     // console.log(`Formatted date: ${dateFormatted}`);
-    //     // //const dateTimePickerFormatted = dateTimePicker.formatDate(deserializeDate(value));
-    //     // //console.log(`DateTimePicker formatted date: ${dateTimePickerFormatted}`);
-    //     // return dateFormatted;
-    //     // if (fieldType === 'date') {
-    //     //     return dateTimePicker.formatDate(deserializeDate(value));
-    //     // }
-    //     // if (fieldType === 'datetime') {
-    //     //     return dateTimePicker.formatDateTime(deserializeDateTime(value));
-    //     // }
-    //     // return 
-    //     if (!value) return '';
-    //     console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
-    //     let formattedDate = value;
-    //     let dateValue = value.split(' ');
-    //     console.log(`Parsed date value: ${dateValue}`);
-    //     if (dateValue.length > 1) {
-    //         formattedDate = new Date(dateValue[2], MONTHS[dateValue[1]], dateValue[0]);
-    //     }
-    //     console.log(`Formatted date: ${formattedDate}`);
-    //     const pad = (n) => String(n).padStart(2, '0');
-    //     if (fieldType === 'datetime') {
-    //         try{
-    //             return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
-    //         } catch (error) {
-    //             return value;
-    //         }
-    //         //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
-    //     }
-    //     else {
-    //         try{
-    //             return formattedDate.toISOString().split('T')[0];
-    //         } catch (error) {
-    //             return value;
-    //         }
-    //         //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
-    //     }
-    // }
-    formatDateModel(value, fieldType) {
+        // if (!value) return '';
+        // console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
+        // //const dateTimePicker = useDateTimePicker();
+        // value=new Date(value);
+        // const dateFormatted = value? fieldType === "date"? formatDate(deserializeDate(value)): formatDateTime(deserializeDateTime(value)): "";
+        // console.log(`Formatted date: ${dateFormatted}`);
+        // //const dateTimePickerFormatted = dateTimePicker.formatDate(deserializeDate(value));
+        // //console.log(`DateTimePicker formatted date: ${dateTimePickerFormatted}`);
+        // return dateFormatted;
+        // if (fieldType === 'date') {
+        //     return dateTimePicker.formatDate(deserializeDate(value));
+        // }
+        // if (fieldType === 'datetime') {
+        //     return dateTimePicker.formatDateTime(deserializeDateTime(value));
+        // }
+        // return 
         if (!value) return '';
-        const formattedDate = new Date(value);
+        console.log(`Formatting date value: ${value} (${typeof value}) for fieldType: ${fieldType}`);
+        let formattedDate = value;
+        let dateValue = value.split(' ');
+        console.log(`Parsed date value: ${dateValue}`);
+        if (dateValue.length > 1) {
+            formattedDate = new Date(Date.UTC(parseInt(dateValue[2]), MONTHS[dateValue[1]], parseInt(dateValue[0]),0,0,0));
+            const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+            const timezoneOffsetMilliseconds = timezoneOffsetMinutes * 60 * 1000;
+            const adjustedTimestamp = formattedDate.getTime() + timezoneOffsetMilliseconds;
+            formattedDate = new Date(adjustedTimestamp);
+        }
+        
+        console.log(`Formatted date: ${formattedDate}`);
         const pad = (n) => String(n).padStart(2, '0');
         if (fieldType === 'datetime') {
-            return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+            try{
+                return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+            } catch (error) {
+                return value;
+            }
             //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
         }
         else {
-            return formattedDate.toISOString().split('T')[0];
+            try{
+                return formattedDate.toISOString().split('T')[0];
+            } catch (error) {
+                return value;
+            }
             //return `${formattedDate.getFullYear()}-${pad(formattedDate.getMonth() + 1)}-${pad(formattedDate.getDate())}`;
+        }
+    }*/
+    formatDateModel(value, fieldType) {
+        if (!value) return '';
+        const parts = value.split(' ');
+        if (parts.length< 3){
+            return value; // Invalid date format, return as is
+        }
+        const day = parseInt(parts[0], 10);
+        const month = MONTHS[parts[1]];
+        const year = parseInt(parts[2], 10);
+        const formattedDate = new Date(Date.UTC(year, month, day));
+        console.log(`Parsed date value: ${formattedDate}`);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (fieldType === 'datetime') {
+            //return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
+            return `${formattedDate.getUTCFullYear()}-${pad(formattedDate.getUTCMonth() + 1)}-${pad(formattedDate.getUTCDate())} ${pad(formattedDate.getHours())}:${pad(formattedDate.getMinutes())}:${pad(formattedDate.getSeconds())}`;
+        }
+        else {
+            //return formattedDate.toISOString().split('T')[0];
+            return `${formattedDate.getUTCFullYear()}-${pad(formattedDate.getUTCMonth() + 1)}-${pad(formattedDate.getUTCDate())}`;
         }
     }
     async addLine() {
