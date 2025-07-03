@@ -1252,7 +1252,15 @@ export class MatrixRenderer extends Component {
         const thead = document.querySelector('table thead');
         const headerRows = thead.querySelectorAll('tr');
         const lastHeaderRow = headerRows[headerRows.length - 1];
-        const lastTh = lastHeaderRow.querySelector('th:last-of-type');
+        //const lastTh = lastHeaderRow.querySelector('th:last-of-type');
+        const allThs = lastHeaderRow.querySelectorAll('th');
+        let lastTh = null;
+
+        for (let i = allThs.length - 1; i >= 0; i--) {
+            if (!allThs[i].classList.contains('direction-right')) {
+                lastTh = allThs[i];
+            }
+        }
         const newMeasureTh = lastTh.cloneNode(true);
         newMeasureTh.classList.add('new_col');
         //lastHeaderRow.appendChild(newMeasureTh);

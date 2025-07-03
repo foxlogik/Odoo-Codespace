@@ -86,6 +86,12 @@ export class MatrixArchParser {
                     if (node.getAttribute("type") === "domain") {
                         archInfo.domainFields.push(fieldName);
                     }
+                    if (node.hasAttribute("direction")) {
+                        archInfo.fieldAttrs[fieldName].direction = node.getAttribute("direction");
+                    }
+                    else{
+                        archInfo.fieldAttrs[fieldName].direction = "left"; // default direction
+                    }
                     
                     break;
                 }
