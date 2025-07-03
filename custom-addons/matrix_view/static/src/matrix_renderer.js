@@ -470,23 +470,16 @@ export class MatrixRenderer extends Component {
         return [];
     }
     async displayMany2oneRecord(ev, fieldName,row_id,row) {
-        // Remove any existing dropdown first
         $(".o-autocomplete--dropdown-menu").remove();   
         const options = await this.getMany2OneOptions(fieldName,row,row_id);
         this._m2oOptions = options;
-        // The clicked .o_input_dropdown div
         const dropdownEl = "#div_"+row_id+"_"+fieldName;
-        //setTimeout(() => {
         const $input = $(dropdownEl).find("input.o-autocomplete--input");
-
-        /*if (!$input.length) {
-            console.warn("Input not found inside .o_input_dropdown");
-            return;
-        }*/
         
         const offset = $input.offset();
         const inputHeight = $input.outerHeight();
-    
+        const windowHeight = $(window).height();
+        const scrollTop = $(window).scrollTop();
         
         const $menu = $('<ul>', {
             class: "o-autocomplete--dropdown-menu ui-widget show dropdown-menu ui-autocomplete",
@@ -520,7 +513,6 @@ export class MatrixRenderer extends Component {
             );
             $menu.append($item);
         });
-    
         // Optional "Search More"
         /*$menu.append(
             $('<li>', { class: "o-autocomplete--dropdown-item ui-menu-item d-block o_m2o_dropdown_option o_m2o_dropdown_option_search_more" })
@@ -538,6 +530,26 @@ export class MatrixRenderer extends Component {
         );*/
     
         $("body").append($menu);
+        
+        const dropdownHeight = $menu.outerHeight();
+        const spaceBelow = windowHeight - (offset.top - scrollTop + inputHeight);
+        const spaceAbove = offset.top - scrollTop;
+
+        // Step 4: Reposition
+        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+            // Show above input
+            $menu.css({
+                top: offset.top - dropdownHeight,
+                visibility: "visible",
+            });
+        } else {
+            // Show below input
+            $menu.css({
+                top: offset.top + inputHeight,
+                visibility: "visible",
+            });
+        }
+        
         /*$input.off("keyup.m2o").on("keyup.m2o", (e) => {
             const query = e.target.value.toLowerCase().trim();
             this._filterMany2OneOptions(query, fieldName, $menu,dropdownEl,row);
