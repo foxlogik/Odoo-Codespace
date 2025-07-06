@@ -13,7 +13,7 @@ class AnalyticLine(models.Model):
         'Project Account',
         ondelete='restrict',
         index=True,
-        check_company=True,default=4, domain="[('id','in', account_domain)]",
+        check_company=True,default=4, domain="[('partner_id','=', partner_id)]",
     )
 
     analytic_distribution = fields.Json(
