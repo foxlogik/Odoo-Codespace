@@ -44,7 +44,7 @@
                                     </t>
                                 </t>
                             </th>
-                            <t t-if="cell_index==headerRow.length-1">
+                            <t t-if="cell_index==headerRow.length-1 and model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right').length>0">
                                 <th t-att-colspan="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right').length" 
                                     class="">
                                 </th>

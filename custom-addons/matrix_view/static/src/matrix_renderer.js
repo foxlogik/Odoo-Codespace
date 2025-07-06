@@ -1271,8 +1271,10 @@ export class MatrixRenderer extends Component {
         for (let i = allThs.length - 1; i >= 0; i--) {
             if (!allThs[i].classList.contains('direction-right')) {
                 lastTh = allThs[i];
+                break; // Stop at the first th that is not a direction-right
             }
         }
+        console.log("lastTh",lastTh);
         const newMeasureTh = lastTh.cloneNode(true);
         newMeasureTh.classList.add('new_col');
         //lastHeaderRow.appendChild(newMeasureTh);
