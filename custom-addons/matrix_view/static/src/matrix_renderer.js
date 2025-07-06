@@ -323,12 +323,13 @@ export class MatrixRenderer extends Component {
         return field.selection || [];
     }
 
-    /**
-     * Fetch many2one options
-     * @param {string} fieldName
-     */
     async getMany2OneOptions(fieldName,row,row_id=null) {
         const field = this.model.metaData.fields[fieldName];
+        console.log("******************************************")
+        console.log("getMany2OneOptions fieldName",fieldName);
+        console.log("getMany2OneOptions field",field.domain);
+        
+        console.log("******************************************")
         const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];   
         if (field.type === "many2one") {
             const model = field.relation;
@@ -341,12 +342,42 @@ export class MatrixRenderer extends Component {
                 
                 fieldDomain=JSON.stringify(fieldDomain);
                 if (fieldDomain.includes(pattern)) {
-                    console.log("fieldDomain inside includes pattern",fieldDomain);
-                    domain = companyId
-                                ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
-                                : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                    let splittedDomain = fieldDomain.split("+");
+                    if (splittedDomain.length>1 && !splittedDomain[1].includes('([])')) {
+
+                        let additionalDomain = splittedDomain[1] ? "["+splittedDomain[1].trim().replaceAll("(","").replaceAll(")", "")+"]": [];
+                        additionalDomain=additionalDomain.replace('"','');
+                        if (additionalDomain) {
+                            //additionalDomain = additionalDomain.replace(", partner_id",", 'partner_id'");
+                            let fieldDomainSplitted=additionalDomain.split(",");
+                            for (let f = 0; f < fieldDomainSplitted.length; f++) {
+                                let fSplitted=fieldDomainSplitted[f].replaceAll(" ","").replaceAll(")","").replaceAll("]","").replaceAll(",","");
+                                if (this.model.metaData.fields[fSplitted]!== undefined && this.model.metaData.fields[fSplitted].name !== undefined) {
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+')]', "'"+String(this.model.metaData.fields[fSplitted].name) + "')]");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+'),]', "'"+String(this.model.metaData.fields[fSplitted].name) + "'),]");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+') ]', "'"+String(this.model.metaData.fields[fSplitted].name) + "') ]");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+' ),]', "'"+String(this.model.metaData.fields[fSplitted].name) + "' ),]");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+' ) ]', "'"+String(this.model.metaData.fields[fSplitted].name) + "' ) ]");
+                                    additionalDomain=additionalDomain.replace(", "+this.model.metaData.fields[fSplitted].name, ", '"+String(this.model.metaData.fields[fSplitted].name) +"'");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+')', "'"+String(this.model.metaData.fields[fSplitted].name) + "')");
+                                    additionalDomain=additionalDomain.replace(this.model.metaData.fields[fSplitted].name+']]', "'"+String(this.model.metaData.fields[fSplitted].name) + "']]");
+                                }
+                            }
+                            additionalDomain = new Domain(additionalDomain).toList();
+                        }
+                        domain = companyId
+                                    ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
+                                    : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                        if (additionalDomain && additionalDomain!=[[]]){domain = domain.concat(additionalDomain);}
+                    }
+                    else{
+                        domain = companyId
+                                    ? ['|', ['company_id', '=', false], ['company_id', 'parent_of', companyId]]
+                                    : ['|', ['company_id', '=', false], ['company_id', 'parent_of', '']];
+                    }
+                
                 } else if (fieldDomain.includes(pattern2)) {
-                    console.log("fieldDomain inside includes pattern2",fieldDomain);
+                    
                     domain = companyId
                                 ? ['|', ['company_id', '=', false], ['company_id', 'in', [companyId]]]
                                 : [['company_id', '=', false]];
@@ -355,17 +386,13 @@ export class MatrixRenderer extends Component {
                     fieldDomain = fieldAttrs?.domain? fieldAttrs.domain : field.domain;
                     
                     try {
-                        console.log("fieldDomain after pattern check - try",fieldDomain);
                         domain = new Domain(fieldDomain).toList();
                         
                     }
                     catch (e) {
                         //fieldDomain = JSON.stringify(fieldDomain);
-                        console.log("fieldDomain after pattern check - catch ",fieldDomain);
                         let fieldDomainSplitted=fieldDomain.split(",");
-                        console.log("fieldDomainSplitted",fieldDomainSplitted);
                         for (let f = 0; f < fieldDomainSplitted.length; f++) {
-                            console.log("fieldDomainSplitted[f]",fieldDomainSplitted[f]);
                             let fSplitted=fieldDomainSplitted[f].replace(" ","").replace(")","").replace("]","").replace(",","");
                             if (this.model.metaData.fields[fSplitted]!== undefined && this.model.metaData.fields[fSplitted].name !== undefined) {
                                 fieldDomain=fieldDomain.replace(this.model.metaData.fields[fSplitted].name+')]', "'"+String(this.model.metaData.fields[fSplitted].name) + "')]");
@@ -377,52 +404,70 @@ export class MatrixRenderer extends Component {
                                 fieldDomain=fieldDomain.replace(this.model.metaData.fields[fSplitted].name+')', "'"+String(this.model.metaData.fields[fSplitted].name) + "')");
                             }
                         }
-                        console.log("fieldDomain after replacing fields",fieldDomain);
                         domain = new Domain(fieldDomain).toList();
                     }
                 }
             }
-            console.log("domain",domain);
             
             if (domain){
                 for (let i = 0; i < domain.length; i++) {
                     if (this.model.metaData.domainFields.includes(domain[i][2]) || this.model.metaData.fields[domain[i][2]]!== undefined) {
+                        console.log("------------------",this.model.metaData.fields[domain[i][2]],"------------- ");
                         const formatGroup = (groupBys, groupValues) => {
                             return groupBys.map((groupBy, index) => {
-                                const fieldName = groupBy.split(':')[0];
-                                let value = groupValues[index];
-                                const fieldInfo = this.model.metaData.fields[fieldName];
+                                const fieldNameGroupBy = groupBy.split(':')[0];
+                                const fieldInfoGroupBy = this.model.metaData.fields[fieldNameGroupBy];
+                                if (fieldNameGroupBy === fieldName || index>groupBys.indexOf(fieldName)) {
+                                    return ['id','!=', false];
+                                }
+                                console.log("formatGroup fieldName",fieldNameGroupBy);
+                                console.log("formatGroup groupValues",groupValues);
+                                console.log("formatGroup index",index);
+                                console.log("formatGroup row_id",row_id);
+                                console.log('$("#"'+fieldNameGroupBy+'"_"'+row_id+')',$("#"+fieldNameGroupBy+"_"+row_id));
+                                console.log('$("#"'+fieldNameGroupBy+'"_"'+row_id+')',$("#"+fieldNameGroupBy+"_"+row_id).attr('data-value'))
+                                console.log('$("#"'+fieldNameGroupBy+'"_"'+row_id+')',$("#"+fieldNameGroupBy+"_"+row_id).val())
+                                var value = groupValues[index];
+                                if (row_id!== null && row_id !== undefined && $("#"+fieldNameGroupBy+"_"+row_id).length > 0) {
+                                    if (fieldInfoGroupBy && fieldInfoGroupBy.type === 'many2one') {
+                                        value = $("#"+fieldNameGroupBy+"_"+row_id).attr('data-value') || groupValues[index];
+                                    }
+                                    else {
+                                        value = $("#"+fieldNameGroupBy+"_"+row_id).val() || groupValues[index];
+                                    }
+                                }
+                                console.log("formatGroup value",value);
+                                const fieldInfo = this.model.metaData.fields[fieldNameGroupBy];
                                 if (fieldInfo && fieldInfo.type === 'date') {
                                     value = this.formatDate(value, 'date');
                                 }
-                                return [fieldName, '=', value];
+                                else if (fieldInfo && (fieldInfo.type === 'many2one' || fieldInfo.type === 'reference' || fieldInfo.type === 'many2many')) {
+                                    value = parseInt(value);
+                                }
+                                console.log([fieldNameGroupBy, '=', value]);
+                                return [fieldNameGroupBy, '=', value];
                             });
                         };
-                        console.log(this.model.metaData.colGroupBys)
                         if (this.model.metaData.colGroupBys && this.model.metaData.colGroupBys.includes(fieldName) && this.model.metaData.domainFields.includes(domain[i][2])) {
-                            console.warn("Many2one field in colGroupBys, skipping domain modification", fieldName);
                             const many2onedomain_records = await this.orm.searchRead(this.model.metaData.resModel, [[domain[i][2],'!=',null],[domain[i][2],'!=',[]]], [domain[i][2]],{limit:1});
-                            console.log("many2onedomain_records",many2onedomain_records);
-                            if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
-                                domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
+                            if (many2onedomain_records.length > 0) {
+                                if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
+                                    domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
+                                }
+                                else{
+                                    domain[i][2]=many2onedomain_records[0][domain[i][2]];
+                                }
                             }
-                            else{
-                                domain[i][2]=many2onedomain_records[0][domain[i][2]];
+                            else {
+                                console.warn("No records found for many2onedomain", many2onedomain_records);
+                                domain[i][2] = false; // or handle as needed
                             }
                         }
                         else if (!row.isNew){
                             if (this.model.metaData.rowGroupBys.includes(domain[i][2])){
-                                console.warn("Many2one field in rowGroupBys, modifying domain", domain[i][2]);
-                                console.log("row.groupId",row.groupId);
-                                console.log("row.data",row.data);
-                                console.log("domain[i][2]",domain[i][2]);
-                                console.log("row_id",row_id);
+                                
                                 const dropdownEl = "#div_"+row_id+"_"+domain[i][2];
-                                console.log("dropdownEl",dropdownEl);
                                 const $input = $(dropdownEl).find("input.o-autocomplete--input");
-                                console.log("$input", $input);
-                                console.log("$input.length", $input.length);
-                                console.log("$input.attr('data-value')", $input.attr('data-value'));
                                 if ($input.length && $input.attr('data-value') !== undefined && $input.attr('data-value') !== null && $input.attr('data-value') !== '') {
                                     if (this.model.metaData.fields[domain[i][2]].type === 'many2one') {
                                         domain[i][2] = parseInt($input.attr('data-value'));
@@ -430,24 +475,27 @@ export class MatrixRenderer extends Component {
                                     else {
                                         domain[i][2] = $input.attr('data-value');
                                     }
-                                    console.log("domain[i][2] set from input", domain[i][2]);
                                 }
                                 else if (row.data && row.data[domain[i][2]] && (row.data[domain[i][2]].value !== undefined || row.data[domain[i][2]].id !== undefined)) {
                                     domain[i][2] = row.data[domain[i][2]].value? row.data[domain[i][2]].value : row.data[domain[i][2]].id;
-                                    console.log("domain[i][2] set from row data", domain[i][2]);
                                 }
                             }
                             else{
                                 let many2onedomain=formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]);
+                                console.log("many2onedomain",many2onedomain);
                                 const many2onedomain_records = await this.orm.searchRead(this.model.metaData.resModel, many2onedomain, [domain[i][2]]);
                                 console.log("many2onedomain_records",many2onedomain_records);
-                                if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
-                                    domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
-                                    console.log("domain[i][2] set from many2onedomain_records-type many2one", domain[i][2]);
+                                if (many2onedomain_records.length > 0) {
+                                    if (this.model.metaData.fields[domain[i][2]] && this.model.metaData.fields[domain[i][2]].type === 'many2one') {
+                                        domain[i][2]=many2onedomain_records[0][domain[i][2]][0];
+                                    }
+                                    else{
+                                        domain[i][2]=many2onedomain_records[0][domain[i][2]];
+                                    }
                                 }
-                                else{
-                                    domain[i][2]=many2onedomain_records[0][domain[i][2]];
-                                    console.log("domain[i][2] set from many2onedomain_records", domain[i][2]);
+                                else {
+                                    console.warn("No records found for many2onedomain", many2onedomain);
+                                    domain[i][2] = false; // or handle as needed
                                 }
                             }
                         }
@@ -664,6 +712,64 @@ export class MatrixRenderer extends Component {
            $("body").append($menu);
         }
     }
+
+    async _selectMany2OneOption(option, fieldName,$menu,dropdownEl,row) {
+        const input = $(dropdownEl).find("input.o-autocomplete--input");
+        if (!input) {
+            console.warn("Input not found inside .o_input_dropdown");
+            return;
+        }
+        // Set the value of the input to the selected option 
+        input.val(option.display_name);
+        input.attr('data-value', option.id);
+        input.closest('td').attr('data-tooltip', option.display_name);
+        // Set the value of the row data to the selected option
+        
+        //setTimeout(function(){this.onSaveButtonClicked(false);}.bind(this),100);
+        var recordDomain = [];
+        const formatGroup = (groupBys, groupValues) => {
+            return groupBys.map((groupBy, index) => {
+                const fieldNameGroup = groupBy.split(':')[0];
+                let value = groupValues[index];
+                const fieldInfo = this.model.metaData.fields[fieldNameGroup];
+                if (fieldInfo && fieldInfo.type === 'date') {
+                    value = this.formatDate(value, 'date');
+                }
+                else if (fieldInfo && fieldInfo.type === 'datetime') {
+                    value = this.formatDate(value, 'datetime');
+                }
+                return [fieldNameGroup, '=', value];
+            });
+        };
+        recordDomain.push(...formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]));
+        /*for (const rowGroup of this.model.metaData.rowGroupBys) {
+            const fieldNameRowGroup = rowGroup.split(':')[0];
+            recordDomain.push([[fieldNameRowGroup, '=', row.groupId[0][this.model.metaData.rowGroupBys.indexOf(rowGroup)]]]);
+        }*/
+        //recordDomain=new Domain(recordDomain).toList();
+        console.log("recordDomain",recordDomain);
+        blockUI();
+        try {
+            const records = await this.orm.searchRead(this.model.metaData.resModel, recordDomain,['id']); 
+            await this.orm.write(
+                    this.model.metaData.resModel,
+                    records.map(record => record.id),
+                    { [fieldName]: option.id }
+            );
+        } finally {
+            unblockUI();
+        }
+        if (row.data){
+            row.data[fieldName] = { id: option.id, label: option.display_name };
+            row.groupId[0][this.model.metaData.rowGroupBys.indexOf(fieldName)] = option.id;
+        }
+        row.edited = true;
+        // Remove the dropdown menu
+        $menu.remove();
+        
+    
+    }
+
     _selectMany2OneOption(option, fieldName,$menu,dropdownEl,row) {
         const input = $(dropdownEl).find("input.o-autocomplete--input");
         if (!input) {
