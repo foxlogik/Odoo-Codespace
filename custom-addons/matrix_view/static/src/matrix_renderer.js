@@ -25,6 +25,14 @@ function updateSelection($items, index) {
     $selected[0]?.scrollIntoView({ block: "nearest" });
 }
 
+function blockUI() {
+    document.getElementById("ui-blocker").style.display = "flex";
+}
+
+function unblockUI() {
+    document.getElementById("ui-blocker").style.display = "none";
+}
+
 export class MatrixRenderer extends Component {
     setup() {
         this.actionService = useService("action");
@@ -336,7 +344,35 @@ export class MatrixRenderer extends Component {
             let domain = [];
             const pattern = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'parent_of', [company_id])] or ['|', ('company_id', '=', False), ('company_id', 'parent_of', [''])])";
             const pattern2 = "(company_id and ['|', ('company_id', '=', False), ('company_id', 'in', [company_id])] or [('company_id', '=', False)]) + ([])";
-            if (field.domain || fieldAttrs?.domain) {
+            var domain_function=fieldAttrs?.domainFunction;
+            if (domain_function && domain_function!== undefined && domain_function !== null && domain_function !== '') {
+                domain_function=domain_function.replaceAll(' ','');
+                var domain_function_splitted = domain_function.split(",");
+                var function_name = domain_function_splitted[0];
+                var domain_arguments = domain_function_splitted.slice(1);
+                for (let i = 0; i < domain_arguments.length; i++) {
+                    if (row.data && row.data[domain_arguments[i]] && (row.data[domain_arguments[i]].value !== undefined || row.data[domain_arguments[i]].id !== undefined)) {
+                        domain_arguments[i] = row.data[domain_arguments[i]].value? row.data[domain_arguments[i]].value : row.data[domain_arguments[i]].id;
+                    }
+                }
+                try{
+                    console.log("Calling domain function", function_name, "with arguments", domain_arguments);
+                    domain = await this.orm.call(
+                        this.model.metaData.resModel, 
+                        function_name,
+                        domain_arguments,
+                        { }
+                    );
+                    console.log("Domain from function", domain);
+
+                }catch (e) {
+                    console.error("Error calling domain function:", e);
+                    domain = [];
+                }
+                
+
+            }
+            else if (field.domain || fieldAttrs?.domain) {
                 // Replace the pattern with the actual company_id
                 var fieldDomain = fieldAttrs?.domain?fieldAttrs.domain:field.domain;
                 
@@ -409,7 +445,7 @@ export class MatrixRenderer extends Component {
                 }
             }
             
-            if (domain){
+            if (domain && !domain_function){
                 for (let i = 0; i < domain.length; i++) {
                     if (this.model.metaData.domainFields.includes(domain[i][2]) || this.model.metaData.fields[domain[i][2]]!== undefined) {
                         console.log("------------------",this.model.metaData.fields[domain[i][2]],"------------- ");
@@ -504,10 +540,7 @@ export class MatrixRenderer extends Component {
                         }
                         else if (this.model.metaData.domainFields.includes(domain[i][2]) && row.isNew){
                             domain=[];
-                        }
-                        
-
-                        
+                        }                        
                     }
                 }
             }
@@ -517,6 +550,7 @@ export class MatrixRenderer extends Component {
         }
         return [];
     }
+
     async displayMany2oneRecord(ev, fieldName,row_id,row) {
         $(".o-autocomplete--dropdown-menu").remove();   
         const options = await this.getMany2OneOptions(fieldName,row,row_id);
@@ -748,7 +782,7 @@ export class MatrixRenderer extends Component {
         }*/
         //recordDomain=new Domain(recordDomain).toList();
         console.log("recordDomain",recordDomain);
-        blockUI();
+        /*blockUI();
         try {
             const records = await this.orm.searchRead(this.model.metaData.resModel, recordDomain,['id']); 
             await this.orm.write(
@@ -756,9 +790,11 @@ export class MatrixRenderer extends Component {
                     records.map(record => record.id),
                     { [fieldName]: option.id }
             );
+        } catch (error) {
+            console.error("Error writing to the database:", error);
         } finally {
             unblockUI();
-        }
+        }*/
         if (row.data){
             row.data[fieldName] = { id: option.id, label: option.display_name };
             row.groupId[0][this.model.metaData.rowGroupBys.indexOf(fieldName)] = option.id;
@@ -770,7 +806,7 @@ export class MatrixRenderer extends Component {
     
     }
 
-    _selectMany2OneOption(option, fieldName,$menu,dropdownEl,row) {
+    /*_selectMany2OneOption(option, fieldName,$menu,dropdownEl,row) {
         const input = $(dropdownEl).find("input.o-autocomplete--input");
         if (!input) {
             console.warn("Input not found inside .o_input_dropdown");
@@ -789,7 +825,7 @@ export class MatrixRenderer extends Component {
         $menu.remove();
         
     
-    }
+    }*/
     _highlightMatch(name, query) {
         const escapedName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const index = escapedName.toLowerCase().indexOf(query);
@@ -827,22 +863,75 @@ export class MatrixRenderer extends Component {
             firstInput.focus();
         }
     }
-    onFieldEdit(fieldname_id,row,cell=null) {
+    async onFieldEdit(fieldname_id,row,cell=null, onblur=false) {
         const input = $('#'+fieldname_id);
         const value = input.val();
         input.attr('data-value', value);
         console.log("fieldname_id",fieldname_id,row,cell);
+        let fieldName = fieldname_id.split('_')[0];
+        console.log("onblur",onblur);
         if (row.isNew){
             if (cell){
                 cell.value=value
             }
             else {
-                //row.value=value;
-                let fieldName = fieldname_id.split('_')[0];
                 row.data[fieldName].value=value;
             }
+            
         }
+        else if (!cell && onblur) {
+            if (row.edited || row.groupId[0][this.model.metaData.rowGroupBys.indexOf(fieldName)] !== value) {
+                var recordDomain = [];
+                const formatGroup = (groupBys, groupValues) => {
+                    return groupBys.map((groupBy, index) => {
+                        const fieldNameGroup = groupBy.split(':')[0];
+                        let groupValue = groupValues[index];
+                        const fieldInfo = this.model.metaData.fields[fieldNameGroup];
+                        if (fieldInfo && fieldInfo.type === 'date') {
+                            groupValue = this.formatDate(groupValue, 'date');
+                        }
+                        else if (fieldInfo && fieldInfo.type === 'datetime') {
+                            groupValue = this.formatDate(groupValue, 'datetime');
+                        }
+                        return [fieldNameGroup, '=', groupValue];
+                    });
+                };
+                recordDomain.push(...formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]));
+                
+                console.log("recordDomain",recordDomain);
+                blockUI();
+                try {
+                    const records = await this.orm.searchRead(this.model.metaData.resModel, recordDomain,['id']); 
+                    await this.orm.write(
+                            this.model.metaData.resModel,
+                            records.map(record => record.id),
+                            { [fieldName]: value }
+                    );
+                } finally {
+                    unblockUI();
+                }
+            }
+            row.data[fieldName].value=value;
+            row.groupId[0][this.model.metaData.rowGroupBys.indexOf(fieldName)] = value;
+        }
+        /*else if (cell) {
+            setTimeout(function(){this.onSaveButtonClicked()}.bind(this),300);
+        }*/
+        console.log("row.data",row.data);
         row.edited = true;
+        /*updates = [];
+        for (const dataKey in row.data){
+            console.log("dataKey",dataKey);
+        }*/
+        
+        /*for (const update of updates) {
+            await this.orm.write(
+                this.model.metaData.resModel,
+                [update.id],
+                update.changes
+            );
+        }*/
+        //setTimeout(function(){this.onSaveButtonClicked(false);}.bind(this),100);
     }
     
     //Save Button to save the modified datas and render the readonly mode
@@ -881,12 +970,12 @@ export class MatrixRenderer extends Component {
         return records;
     }
 
-    async onSaveButtonClicked() {
+    async onSaveButtonClicked(render=true) {
         const edits = {};
         const creates = [];
         const updates = [];
         let row_index = 0;
-
+        blockUI();
         for (const row of this.table.rows) {
             let cell_index = 0;
             console.log("row",row);
@@ -946,6 +1035,9 @@ export class MatrixRenderer extends Component {
                             });
                         }
                         else{
+                            console.log("--------------------------------------------------------")
+                            console.log("---------------------------------------------------------")
+                            console.log("cell.groupId",cell.groupId);
                             const records = await this._getRecordDataForCell(cell.groupId,cell.measure) || [];
                             const fieldName = cell.measure;
                             const value = cell.value;
@@ -1203,7 +1295,7 @@ export class MatrixRenderer extends Component {
             });
             row_index++;
         }
-        
+        this.history=this.table.rows;
         setTimeout(async function() {
             this.state.edits = edits;
 
@@ -1236,27 +1328,21 @@ export class MatrixRenderer extends Component {
                         );
                     }
                 }
-
+                
+            } catch (error) {
+                console.error("Save error:", error);
+                this.notification.add(_t("Error saving changes"), { type: "danger" });
+            }
+            finally {
                 this.model.data.newRows = [];
                 this.state.isEditing = true;
                 this.state.edits = {};
                 await this.model.load(this.model.searchParams);
-                
-                
                 this.notification.add(_t("Changes saved successfully"), { type: "success" });
-                //$('.o_matrix_edit').show();
-                //$('.o_matrix_download').show();
-                //$('.o_matrix_save').hide();
-                //$('.o_matrix_cancel').hide();
                 this.model.notify();
+                $('.new_col').remove();
                 self.render();
-                setTimeout(function(){ 
-                    //window.location.reload();
-                    $('.new_col').remove();
-                },200);
-            } catch (error) {
-                console.error("Save error:", error);
-                this.notification.add(_t("Error saving changes"), { type: "danger" });
+                unblockUI();
             }
         }.bind(this), 400);
     }

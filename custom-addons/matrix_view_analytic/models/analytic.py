@@ -13,7 +13,7 @@ class AnalyticLine(models.Model):
         'Project Account',
         ondelete='restrict',
         index=True,
-        check_company=True,default=4, domain="[('partner_id','=', partner_id)]",
+        check_company=True,default=4, domain="[('id','=', account_domain)]",
     )
 
     analytic_distribution = fields.Json(
@@ -73,6 +73,17 @@ class AnalyticLine(models.Model):
             else:
                 rec.account_domain = []
             #return accounts and accounts.ids or []
+
+    @api.model
+    def get_account_domain_ids(self,partner_id):
+        print("********\n\n\nget_account_domain_ids\n\n\n********")
+        if partner_id:
+            domain = [('partner_id', '=',partner_id)]
+            accounts = self.env['account.analytic.account'].search(domain)
+        else:
+            domain = [('active', '=', True)]
+            accounts = self.env['account.analytic.account'].search(domain)
+        return accounts and [['id','in',accounts.ids]] or []
 
     @api.depends('company_id','write_date','create_date')
     def _compute_product_domain(self):
