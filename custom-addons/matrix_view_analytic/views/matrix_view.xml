@@ -24,7 +24,7 @@
                 <field name="partner_id" type="row" context="{'default_partner_id':10}"/>
                 <field name="account_domain" type="domain" invisible="1"/>
                 <field name="product_id" type="col" domain="[('id','in',product_domain)]" readonly="0" />
-                <field name="account_id" type="row" readonly="0" invisible="0" direction="left"/>
+                <field name="account_id" type="row" readonly="0" invisible="0" direction="left" domainFunction="get_account_domain_ids,partner_id"/>
                 <field name="note" type="row" direction="right"/>
                 <field name="move_line_id" type="row" invisible="1"/>
                 <field name="product_domain" type="domain" invisible="1"/>
@@ -63,7 +63,7 @@
         <field name="view_id" ref="analytic.view_account_analytic_line_tree"/>
         <field name="search_view_id" ref="analytic.view_account_analytic_line_filter"/>
         <field name="context">{'default_product_id':16,'default_partner_id':1}</field>
-        <field name="domain">[('product_id','!=',False)]</field>
+        <field name="domain">[('product_id','!=',False),('product_id.default_code','in',('E-COM09','E-COM06'))]</field>
     </record>
 
 

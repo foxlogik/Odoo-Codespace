@@ -3,6 +3,24 @@
 
     <t t-name="matrix_view.MatrixRenderer">
         <t t-call="{{ props.buttonTemplate }}"/>
+        <!--Loading pannel blocker-->
+        <style>
+            #ui-blocker {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw; height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 2em;
+            }
+        </style>
+
+        <div id="ui-blocker">Loading...</div>
+
         <div t-if="model.hasData() and model.metaData.activeMeasures.length" 
             class="o_matrix mx-3 table-responsive" t-ref="root">
             <table class="table table-sm table-bordered" t-ref="table">
