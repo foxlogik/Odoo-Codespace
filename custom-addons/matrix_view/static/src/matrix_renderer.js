@@ -760,30 +760,29 @@ export class MatrixRenderer extends Component {
         // Set the value of the row data to the selected option
         
         //setTimeout(function(){this.onSaveButtonClicked(false);}.bind(this),100);
-        var recordDomain = [];
-        const formatGroup = (groupBys, groupValues) => {
-            return groupBys.map((groupBy, index) => {
-                const fieldNameGroup = groupBy.split(':')[0];
-                let value = groupValues[index];
-                const fieldInfo = this.model.metaData.fields[fieldNameGroup];
-                if (fieldInfo && fieldInfo.type === 'date') {
-                    value = this.formatDate(value, 'date');
-                }
-                else if (fieldInfo && fieldInfo.type === 'datetime') {
-                    value = this.formatDate(value, 'datetime');
-                }
-                return [fieldNameGroup, '=', value];
-            });
-        };
-        recordDomain.push(...formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]));
-        /*for (const rowGroup of this.model.metaData.rowGroupBys) {
-            const fieldNameRowGroup = rowGroup.split(':')[0];
-            recordDomain.push([[fieldNameRowGroup, '=', row.groupId[0][this.model.metaData.rowGroupBys.indexOf(rowGroup)]]]);
-        }*/
-        //recordDomain=new Domain(recordDomain).toList();
-        console.log("recordDomain",recordDomain);
+        
+        
         /*blockUI();
         try {
+            var recordDomain = [];
+            const formatGroup = (groupBys, groupValues) => {
+                return groupBys.map((groupBy, index) => {
+                    const fieldNameGroup = groupBy.split(':')[0];
+                    let value = groupValues[index];
+                    const fieldInfo = this.model.metaData.fields[fieldNameGroup];
+                    if (fieldInfo && fieldInfo.type === 'date') {
+                        value = this.formatDate(value, 'date');
+                    }
+                    else if (fieldInfo && fieldInfo.type === 'datetime') {
+                        value = this.formatDate(value, 'datetime');
+                    }
+                    return [fieldNameGroup, '=', value];
+                });
+            };
+            recordDomain.push(...formatGroup(this.model.metaData.rowGroupBys, row.groupId[0]));
+            
+            //recordDomain=new Domain(recordDomain).toList();
+            console.log("recordDomain",recordDomain);
             const records = await this.orm.searchRead(this.model.metaData.resModel, recordDomain,['id']); 
             await this.orm.write(
                     this.model.metaData.resModel,
