@@ -975,6 +975,10 @@ export class MatrixRenderer extends Component {
         const edits = {};
         const creates = [];
         const updates = [];
+        console.log("onSaveButtonClicked model context",this.model.context);
+        console.log("onSaveButtonClicked searchParams context",this.model.searchParams.context);
+        console.log("onSaveButtonClicked searchParams domain",this.model.searchParams.domain);
+        console.log("onSaveButtonClicked user context",session.user_context);
         let row_index = 0;
         blockUI();
         for (const row of this.table.rows) {
@@ -1297,19 +1301,13 @@ export class MatrixRenderer extends Component {
             row_index++;
         }
         this.history=this.table.rows;
-        setTimeout(async function() {
+        //setTimeout(async function() {
             this.state.edits = edits;
 
             console.log("*********this.state.edits************",this.state.edits);
             console.log("*********this.model.data.newRows************",this.model.data.newRows);
             try {
-            
-                const modelFields = await this.orm.call(
-                    this.model.metaData.resModel, 
-                    'fields_get',
-                    [],
-                    { attributes: ['string', 'type', 'required'] }
-                );
+        
                 
                 console.log("------creates-------", creates);
                 console.log("---------updates---------", updates);
@@ -1329,23 +1327,41 @@ export class MatrixRenderer extends Component {
                         );
                     }
                 }
+                this.model.data.newRows = [];
+                this.state.isEditing = true;
+                this.state.edits = {};
+                
+                this.notification.add(_t("Changes saved successfully"), { type: "success" });
+                //await this.model.load(this.model.searchParams);
+                this.model.notify();
+                $('.new_col').remove();
+                //self.render();
+                const actionContext = this.model.searchParams.context || {};
+                const actionDomain = this.model.searchParams.domain || [];
+                
+                // Re-execute the same action to reload the view
+                await this.env.services.action.doAction({
+                    type: "ir.actions.act_window",
+                    name: this.model.metaData.title,
+                    res_model: this.model.metaData.resModel,
+                    views: [[false, "matrix"]],
+                    target: "current",
+                    context: actionContext,
+                    domain: actionDomain,
+                }, {
+                    clearBreadcrumbs: true,  // Optional: cleans navigation history
+                    replaceCurrentAction: true  // Replaces current view instead of adding to stack
+                });
                 
             } catch (error) {
                 console.error("Save error:", error);
                 this.notification.add(_t("Error saving changes"), { type: "danger" });
             }
             finally {
-                this.model.data.newRows = [];
-                this.state.isEditing = true;
-                this.state.edits = {};
-                await this.model.load(this.model.searchParams);
-                this.notification.add(_t("Changes saved successfully"), { type: "success" });
-                this.model.notify();
-                $('.new_col').remove();
-                self.render();
+                
                 unblockUI();
             }
-        }.bind(this), 400);
+        //}.bind(this), 400);
     }
     //Cancel Button to cancel the ongoing modifications and render the readonly mode
     onCancelButtonClicked(){
