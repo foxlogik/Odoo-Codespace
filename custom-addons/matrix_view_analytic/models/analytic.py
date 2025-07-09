@@ -75,9 +75,10 @@ class AnalyticLine(models.Model):
             #return accounts and accounts.ids or []
 
     @api.onchange('partner_id')
-    #@api.model
+    @api.model
     def get_account_domain_ids(self,partner_id=None):
         print("********\n\n\nget_account_domain_ids\n\n\n********")
+        print("self",self)
         if partner_id:
             domain = [('partner_id', '=',partner_id)]
             accounts = self.env['account.analytic.account'].search(domain)
@@ -90,8 +91,8 @@ class AnalyticLine(models.Model):
             accounts = self.env['account.analytic.account'].search(domain)
 
         account_domain = accounts and [['id','in',accounts.ids]] or []
-        return account_domain
-        #return {'domain': {'account_id': account_domain}}
+        #return account_domain
+        return {'domain': {'account_id': account_domain}}
 
     @api.depends('company_id','write_date','create_date')
     def _compute_product_domain(self):

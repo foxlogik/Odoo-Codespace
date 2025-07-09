@@ -350,6 +350,7 @@ export class MatrixRenderer extends Component {
                 var domain_function_splitted = domain_function.split(",");
                 var function_name = domain_function_splitted[0];
                 var domain_arguments = domain_function_splitted.slice(1);
+
                 for (let i = 0; i < domain_arguments.length; i++) {
                     if (row.data && row.data[domain_arguments[i]] && (row.data[domain_arguments[i]].value !== undefined || row.data[domain_arguments[i]].id !== undefined)) {
                         domain_arguments[i] = row.data[domain_arguments[i]].value? row.data[domain_arguments[i]].value : row.data[domain_arguments[i]].id;
@@ -364,6 +365,7 @@ export class MatrixRenderer extends Component {
                         { }
                     );
                     console.log("Domain from function", domain);
+                    domain = domain['domain'][fieldName] || domain; // Handle if the function returns a dict with 'domain' key
 
                 }catch (e) {
                     console.error("Error calling domain function:", e);
