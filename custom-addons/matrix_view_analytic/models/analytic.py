@@ -26,6 +26,7 @@ class AnalyticLine(models.Model):
         help="Optional description of the analytic line.",
         readonly=False,
     )
+    date = fields.Date('Date', required=True, index=True, default=lambda self: fields.Date.context_today(self))
     
     @api.depends('account_id', 'company_id')
     def _compute_analytic_distribution(self):
@@ -76,23 +77,23 @@ class AnalyticLine(models.Model):
 
     @api.onchange('partner_id')
     @api.model
-    def get_account_domain_ids(self,partner_id=None):
-        print("********\n\n\nget_account_domain_ids\n\n\n********")
+    def get_account_domain_ids(self,values={}):
+        print("********\n\n\nget_account_domain_ids\n\n\n********",self)
+        print("values", values)
+        if values:
+            self = self.new(values)
         print("self",self)
-        if partner_id:
-            domain = [('partner_id', '=',partner_id)]
-            accounts = self.env['account.analytic.account'].search(domain)
-        elif self.partner_id:
-            domain = [('partner_id', '=',self.partner_id.id)]
-            accounts = self.env['account.analytic.account'].search(domain)
+        account_domain = self.account_domain
+        print("account_domain", account_domain)
+        # if self.partner_id:
+        #     domain = [('partner_id', '=',self.partner_id.id)]
+        #     accounts = self.env['account.analytic.account'].search(domain)
         
-        else:
-            domain = [('active', '=', True)]
-            accounts = self.env['account.analytic.account'].search(domain)
-
-        account_domain = accounts and [['id','in',accounts.ids]] or []
+        # else:
+        #     domain = [('active', '=', True)]
+        #     accounts = self.env['account.analytic.account'].search(domain)
         #return account_domain
-        return {'domain': {'account_id': account_domain}}
+        return {'domain': {'account_id': [['id','in',account_domain]]}}
 
     @api.depends('company_id','write_date','create_date')
     def _compute_product_domain(self):
@@ -113,7 +114,7 @@ class AnalyticLine(models.Model):
                 rec.product_domain = products.ids
             else:
                 rec.product_domain = []
-
+    
 class ProductProduct(models.Model):
     _inherit = "product.product"
     _order = 'sequence, default_code, name, id'

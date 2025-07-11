@@ -349,19 +349,46 @@ export class MatrixRenderer extends Component {
                 domain_function=domain_function.replaceAll(' ','');
                 var domain_function_splitted = domain_function.split(",");
                 var function_name = domain_function_splitted[0];
-                var domain_arguments = domain_function_splitted.slice(1);
+                /*var domain_arguments = domain_function_splitted.slice(1);
 
                 for (let i = 0; i < domain_arguments.length; i++) {
                     if (row.data && row.data[domain_arguments[i]] && (row.data[domain_arguments[i]].value !== undefined || row.data[domain_arguments[i]].id !== undefined)) {
                         domain_arguments[i] = row.data[domain_arguments[i]].value? row.data[domain_arguments[i]].value : row.data[domain_arguments[i]].id;
                     }
-                }
+                }*/
                 try{
+                    /*if (row.isNew) {
+                        domain_arguments=row.data;
+                    }*/
+                    
+                    var domain_arguments = Object.fromEntries(
+                            Object.entries(row.data).map(([key, obj]) => {
+                                const $keyinput = $('#' + key + '_' + row_id);
+                                let keyvalue;
+                                if (
+                                    $keyinput.length &&
+                                    $keyinput.attr('data-value') !== undefined &&
+                                    $keyinput.attr('data-value') !== null &&
+                                    $keyinput.attr('data-value') !== ''
+                                ) {
+                                    if(this.model.metaData.fields[key].type === 'many2one' || this.model.metaData.fields[key].type === 'reference' || this.model.metaData.fields[key].type === 'many2many') {   
+                                        keyvalue = parseInt($keyinput.attr('data-value'));
+                                    }else{
+                                        keyvalue = $keyinput.attr('data-value');
+                                    }
+                                } else if (this.model.metaData.fields[key].type === 'date') {
+                                    keyvalue = obj.label;
+                                } else {
+                                    keyvalue = obj.value;
+                                }
+                                return [key, keyvalue];
+                            })
+                        );
                     console.log("Calling domain function", function_name, "with arguments", domain_arguments);
                     domain = await this.orm.call(
                         this.model.metaData.resModel, 
                         function_name,
-                        domain_arguments,
+                        [domain_arguments],
                         { }
                     );
                     console.log("Domain from function", domain);
