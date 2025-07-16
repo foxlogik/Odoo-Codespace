@@ -385,14 +385,14 @@ export class MatrixRenderer extends Component {
                             })
                         );
                     console.log("Calling domain function", function_name, "with arguments", domain_arguments);
-                    domain = await this.orm.call(
+                    const result  = await this.orm.call(
                         this.model.metaData.resModel, 
                         function_name,
-                        [domain_arguments],
-                        { }
+                        [],
+                        {values:domain_arguments }
                     );
-                    console.log("Domain from function", domain);
-                    domain = domain['domain'][fieldName] || domain; // Handle if the function returns a dict with 'domain' key
+                    console.log("Domain from function", result);
+                    domain = result['domain'][fieldName] || result; // Handle if the function returns a dict with 'domain' key
 
                 }catch (e) {
                     console.error("Error calling domain function:", e);

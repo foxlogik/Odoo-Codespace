@@ -4,6 +4,7 @@ from odoo.tools.float_utils import float_round, float_compare
 from odoo.tools.misc import flatten
 from odoo.exceptions import UserError, ValidationError
 import json
+from odoo.addons.matrix_view.models import matrix_api
 
 class AnalyticLine(models.Model):
     _inherit = "account.analytic.line"
@@ -76,23 +77,12 @@ class AnalyticLine(models.Model):
             #return accounts and accounts.ids or []
 
     @api.onchange('partner_id')
-    @api.model
-    def get_account_domain_ids(self,values={}):
+    @matrix_api
+    def get_account_domain_ids(self):
         print("********\n\n\nget_account_domain_ids\n\n\n********",self)
-        print("values", values)
-        if values:
-            self = self.new(values)
-        print("self",self)
         account_domain = self.account_domain
         print("account_domain", account_domain)
-        # if self.partner_id:
-        #     domain = [('partner_id', '=',self.partner_id.id)]
-        #     accounts = self.env['account.analytic.account'].search(domain)
         
-        # else:
-        #     domain = [('active', '=', True)]
-        #     accounts = self.env['account.analytic.account'].search(domain)
-        #return account_domain
         return {'domain': {'account_id': [['id','in',account_domain]]}}
 
     @api.depends('company_id','write_date','create_date')
