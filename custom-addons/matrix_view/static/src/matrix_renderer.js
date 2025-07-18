@@ -831,6 +831,85 @@ export class MatrixRenderer extends Component {
         // Remove the dropdown menu
         $menu.remove();
         
+        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
+        let row_input = input.attr('id').split('_');
+        let row_id = row_input[row_input.length-1];
+        console.log("row_id", row_id);
+        if (fieldAttrs && fieldAttrs.onchange!== undefined && fieldAttrs.onchange !== null) {
+            var onchange_function=fieldAttrs.onchange.replaceAll(' ','');
+            console.log("\\\\\\\\\\\\\\\\",row.data);
+            var domain_arguments = Object.fromEntries(
+                    Object.entries(row.data).map(([key, obj]) => {
+                        const $keyinput = $('#' + key + '_' + row_id);
+                        let keyvalue;
+                        if (
+                            $keyinput.length &&
+                            $keyinput.attr('data-value') !== undefined &&
+                            $keyinput.attr('data-value') !== null &&
+                            $keyinput.attr('data-value') !== ''
+                        ) {
+                            if(this.model.metaData.fields[key].type === 'many2one' || this.model.metaData.fields[key].type === 'reference' || this.model.metaData.fields[key].type === 'many2many') {   
+                                keyvalue = parseInt($keyinput.attr('data-value'));
+                            }else{
+                                keyvalue = $keyinput.attr('data-value');
+                            }
+                        } else if (this.model.metaData.fields[key].type === 'date') {
+                            keyvalue = obj.label;
+                        } else {
+                            keyvalue = obj.value;
+                        }
+                        return [key, keyvalue];
+                    })
+                );
+            domain_arguments[fieldName] = option.id;
+            console.log("Calling onchange function", onchange_function, "with arguments", domain_arguments);
+            const result  = await this.orm.call(
+                this.model.metaData.resModel, 
+                onchange_function,
+                [],
+                {values:domain_arguments }
+            );
+            console.log("Result from onchange function", result);
+            let values = result['values'] || {};
+            if (values){
+                for (const key in values) {
+                    if (key in row.data) {
+                        //row.data[key].value = values[key];
+                        
+                        const keyfieldName = key.split(':')[0];
+                        console.log("keyfieldName",keyfieldName);
+                        const $keyinput = $('#' + keyfieldName + '_' + row_id);
+                        console.log("keyinput", $keyinput);
+
+                        const keyfield = this.model.metaData.fields[keyfieldName];
+                        let keyvalue= values[key];
+                        let keylabel= keyvalue;
+                        if (this.model.metaData.fields[keyfieldName] && this.model.metaData.fields[keyfieldName].type === 'many2one') {
+                            const keymodel = keyfield.relation;
+                            await this.orm.searchRead(keymodel, [['id', '=', keyvalue]], ['display_name']).then(records => {
+                                console.log("Many2one records found", records);
+                                if (records.length > 0) {
+                                    keylabel = records[0].display_name;
+                                } else {
+                                    console.warn("No records found for many2one field", keyfieldName, "with value", keyvalue);
+                                    keyvalue = false; // or handle as needed
+                                    keylabel = '';
+                                }
+                            });
+                            
+                            row.data[keyfieldName] = { id: keyvalue, label: keylabel };
+                            
+                        }
+                        console.log("Setting value for", keyfieldName, "to", keylabel, "with id", keyvalue);
+                        console.log("Filling keyinput", $keyinput, "with", keyvalue);
+                        if ($keyinput.length) {
+                            $keyinput.val(keylabel);
+                            $keyinput.attr('data-value', keyvalue);
+                        }
+                    }
+                }
+            }
+        }
     
     }
 
@@ -947,6 +1026,54 @@ export class MatrixRenderer extends Component {
         }*/
         console.log("row.data",row.data);
         row.edited = true;
+        const fieldAttrs = this.model.metaData.fieldAttrs[fieldName];
+        if (fieldAttrs && fieldAttrs.onchange!== undefined && fieldAttrs.onchange !== null) {
+            var onchange_function=fieldAttrs.onchange.replaceAll(' ','');
+            var domain_arguments = Object.fromEntries(
+                    Object.entries(row.data).map(([key, obj]) => {
+                        const $keyinput = $('#' + key + '_' + row_id);
+                        let keyvalue;
+                        if (
+                            $keyinput.length &&
+                            $keyinput.attr('data-value') !== undefined &&
+                            $keyinput.attr('data-value') !== null &&
+                            $keyinput.attr('data-value') !== ''
+                        ) {
+                            if(this.model.metaData.fields[key].type === 'many2one' || this.model.metaData.fields[key].type === 'reference' || this.model.metaData.fields[key].type === 'many2many') {   
+                                keyvalue = parseInt($keyinput.attr('data-value'));
+                            }else{
+                                keyvalue = $keyinput.attr('data-value');
+                            }
+                        } else if (this.model.metaData.fields[key].type === 'date') {
+                            keyvalue = obj.label;
+                        } else {
+                            keyvalue = obj.value;
+                        }
+                        return [key, keyvalue];
+                    })
+                );
+            console.log("Calling onchange function", onchange_function, "with arguments", domain_arguments);
+            const result  = await this.orm.call(
+                this.model.metaData.resModel, 
+                onchange_function,
+                [],
+                {values:domain_arguments }
+            );
+            console.log("Result from onchange function", result);
+            let values = result['values'] || {};
+            if (values){
+                for (const key in values) {
+                    if (key in row.data) {
+                        //row.data[key].value = values[key];
+                        const $input = $('#' + key + '_' + row_id);
+                        if ($input.length) {
+                            $input.val(values[key]);
+                            $input.attr('data-value', values[key]);
+                        }
+                    }
+                }
+            }
+        }
         /*updates = [];
         for (const dataKey in row.data){
             console.log("dataKey",dataKey);

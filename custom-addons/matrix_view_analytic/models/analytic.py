@@ -60,15 +60,12 @@ class AnalyticLine(models.Model):
             domain = []
             
             #domain = [('id', 'in',[1,2,3] )]
+            accounts = []
+            print("********\n\n\ncompute account domain\n\n\n********", rec.partner_id, rec.company_id)
             if rec.partner_id:
                 domain = [('partner_id', '=', rec.partner_id.id)]
                 accounts = self.env['account.analytic.account'].search(domain)
-            else:
-                domain = [
-                    ('company_id', '=', rec.company_id.id),
-                    ('active', '=', True),
-                ]
-                accounts = self.env['account.analytic.account'].search(domain)
+            
             print("accounts", accounts)
             if (accounts):
                 rec.account_domain = accounts.ids
@@ -81,9 +78,11 @@ class AnalyticLine(models.Model):
     def get_account_domain_ids(self):
         print("********\n\n\nget_account_domain_ids\n\n\n********",self)
         account_domain = self.account_domain
-        print("account_domain", account_domain)
+        print("account_domain", account_domain and account_domain[0] or False)
+        ##self.account_id = account_domain and account_domain[0] or False  # Reset account_id when partner changes
         
-        return {'domain': {'account_id': [['id','in',account_domain]]}}
+        return {'domain': {'account_id': [['id','in',account_domain]]},
+                'values': {'account_id': account_domain and account_domain[0] or False}}
 
     @api.depends('company_id','write_date','create_date')
     def _compute_product_domain(self):

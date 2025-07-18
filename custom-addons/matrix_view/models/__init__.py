@@ -9,6 +9,7 @@ def matrix_api(func):
     def wrapper(self,*args, **kwargs):
         values = args[0] if args else kwargs.get('values', {})
         print("********\n\n\nmatrix_api decorator called\n\n\n********")
+        print("Values passed to the function:", values)
         rec = self.new(values)
         return func(rec)
     return wrapper

@@ -95,6 +95,9 @@ export class MatrixArchParser {
                     if (node.hasAttribute("domainFunction")) {
                         archInfo.fieldAttrs[fieldName].domainFunction = node.getAttribute("domainFunction");
                     }
+                    if (node.hasAttribute("onchange")) {
+                        archInfo.fieldAttrs[fieldName].onchange = node.getAttribute("onchange");
+                    }
                     
                     break;
                 }
