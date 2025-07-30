@@ -140,6 +140,7 @@ export class MatrixModel extends Model {
             numbering: {},
             newRows: [],
             dynamicColumns: new Map(),
+            copiedRow:null,
         };
         if (!Array.isArray(this.data.newRows)) {
             this.data.newRows = [];
@@ -631,6 +632,7 @@ export class MatrixModel extends Model {
      */
     async load(searchParams) {
         this.data.newRows = [];
+        this.data.copiedRow = null;
         this.searchParams = searchParams;
         const processedMeasures = processMeasure(searchParams.context.matrix_measures);
         const activeMeasures = processedMeasures || this.metaData.activeMeasures;
@@ -1288,6 +1290,7 @@ export class MatrixModel extends Model {
                     groupId: [group.values, []],
                     subGroupMeasurements: [],
                     edited: false,
+                    isEditing: false,
                 };
                 
                 // Get sorted columns for this row

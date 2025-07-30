@@ -60,6 +60,83 @@ export class MatrixRenderer extends Component {
         });
     }
     
+    matrixCopy(ev,row_index,row){
+        const tr_tocopy = $(ev.currentTarget).closest('tr'); 
+        const tbody = $('.o_matrix').find("tbody"); 
+        const newRow = tr_tocopy.clone(true);
+
+        let note_value = tr_tocopy.find('input#note_' + row_index).val();
+        let name_value = tr_tocopy.find('input#name_' + row_index).val();
+
+        newRow.find('input#note_' + row_index).val(note_value + '-copy');
+        newRow.find('input#note_' + row_index).attr('data-value', note_value + '-copy');
+
+        newRow.find('input#name_' + row_index).val(name_value + '-copy');
+        newRow.find('input#name_' + row_index).attr('data-value', name_value + '-copy');
+
+        //tbody.find('tr').eq(row_index).after(newRow);
+        console.log(row.data)
+        const newRowData = { ...row.data };
+        console.log(newRowData);
+
+        if ('note' in newRowData) {
+            newRowData['note']= {'value':newRowData['note']['value']+'-copy','label':newRowData['note']['label']+'-copy'};
+        } 
+        if ('name' in newRowData) {
+            newRowData['name']= {'value':newRowData['name']['value']+'-copy','label':newRowData['note']['label']+'-copy'};
+        }
+
+        const newRowDict = {
+            id: `new_${Date.now()}`,
+            data: newRowData,
+            groupId: row.groupId,
+            subGroupMeasurements: row.subGroupMeasurements,
+            isNew: true,
+            isCopied:true,
+            edited:true,
+        };
+
+        this.table.rows.splice(row_index + 1, 0, newRowDict);
+        this.render();
+        $("tbody").find("input").each((index, input) => {
+            input.classList.add("no_border_input");
+            if (input.classList.contains("o-autocomplete--input")) {
+                $(input).css("transform","translateY(-3px)");
+                $(input).parent().parent().find(".o_dropdown_button").addClass("dropdown_button_hidden");
+            }
+        });
+        /*if(this.model.data.newRows?.length>=1){
+            this.model.data.newRows.unshift(newRowDict);
+        }
+        else{
+            this.model.data.newRows=[newRowDict];
+        }*/
+        
+    }   
+
+    onRowClicked(ev, rowIndex, row) {
+        for (const r of this.table.rows) {
+            r.isEditing = false;
+        }
+        row.isEditing = true;
+        $("tbody").find("input").each((index, input) => {
+            input.classList.add("no_border_input");
+            if (input.classList.contains("o-autocomplete--input")) {
+                $(input).css("transform","translateY(-3px)");
+                $(input).parent().parent().find(".o_dropdown_button").addClass("dropdown_button_hidden");
+            }
+        });
+        $(ev.currentTarget).find("input").each((index, input) => {
+            input.classList.remove("no_border_input");
+            if (input.classList.contains("o-autocomplete--input")) {
+                $(input).css("transform","translateY(3px)");
+                $(input).parent().parent().find(".o_dropdown_button").removeClass("dropdown_button_hidden");;
+            }
+        });
+        
+        //this.render();
+    }
+    
     onStartResize(ev) {
         this.resizing = true;
         if (!this.tableRef.el) {
@@ -1519,10 +1596,6 @@ export class MatrixRenderer extends Component {
     }
     //Cancel Button to cancel the ongoing modifications and render the readonly mode
     onCancelButtonClicked(){
-        //$('.o_matrix_edit').show();
-        //$('.o_matrix_download').show();
-        //$('.o_matrix_save').hide();
-        //$('.o_matrix_cancel').hide();
         
         // Reset model state
         this.model.data.newRows = [];
@@ -1532,6 +1605,14 @@ export class MatrixRenderer extends Component {
         this.state.isEditing = true;
         this.state.edits = {};
         $('.new_col').remove();
+        $("tbody").find("input").each((index, input) => {
+            console.log("Input in edit mode", input);
+            input.classList.add("no_border_input");
+            if (input.classList.contains("o-autocomplete--input")) {
+                $(input).css("transform","translateY(-3px)");
+                $(input).parent().parent().find(".o_dropdown_button").addClass("dropdown_button_hidden");
+            }
+        });
         this.model.notify();
         this.render();
         //setTimeout(function(){ window.location.reload();},100);
@@ -1560,10 +1641,27 @@ export class MatrixRenderer extends Component {
             if (InputToFocus) {
                 InputToFocus.focus();
             }
+            $("tbody").find("input").each((index, input) => {
+                console.log("Input in edit mode", input);
+                input.classList.add("no_border_input");
+                /*if (input.classList.contains("o-autocomplete--input")) {
+                    $(input).css("transform","translateY(-3px)");
+                    //$(input).parentNode?.find(".o_input_dropdown").hide();
+                }*/
+            });
+            $('tr.o_matrix_new_row').find("input").each((index, input) => {
+                console.log("Input in clicked row", input,$(input));
+                input.classList.remove("no_border_input");
+                /*if (input.classList.contains("o-autocomplete--input")) {
+                    $(input).css("transform","translateY(3px)");
+                    //$(input).parentNode?.find(".o_input_dropdown").show();
+                }*/
+            });
         }.bind(this),100);
     }
 
     async onAddColumnClicked(cell,cell_index,model) {
+        console.log(cell,cell_index)
         const th = document.querySelector(`th[name="${cell.name}"][index="${cell_index}"]`);
         var count_new_col = th.closest('tr').querySelectorAll('th.new_col').length || 0;
         const next_cell_index=cell_index+1+count_new_col;
@@ -1625,10 +1723,10 @@ export class MatrixRenderer extends Component {
         }
         //duplicate last measure header
         const thead = document.querySelector('table thead');
-        const headerRows = thead.querySelectorAll('tr');
+        const headerRows = thead.querySelectorAll('tr:not(.add_button)');
         const lastHeaderRow = headerRows[headerRows.length - 1];
         //const lastTh = lastHeaderRow.querySelector('th:last-of-type');
-        const allThs = lastHeaderRow.querySelectorAll('th');
+        const allThs = lastHeaderRow.querySelectorAll('th:not(.add_button)');
         let lastTh = null;
 
         for (let i = allThs.length - 1; i >= 0; i--) {
@@ -1661,7 +1759,9 @@ export class MatrixRenderer extends Component {
             //console.log("this.model.metaData.rowGroupBys",this.model.metaData.rowGroupBys,this.table.rows[row_index]);
             let isMeasureReadonly=this.model.metaData.fieldAttrs[measure_name].isReadOnly;
             const $row = $(`#${measure_name}_${row_index}_0`).closest('tr');
-            const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length;
+            const len_row=$row.find('td:not(.new_col)').length-1-rowgroupbys_length-1;
+            console.log("len_row",len_row)
+            console.log(row_index)
             const inputId = `${measure_name}_${row_index}_${len_row}`;
 
             // Find the element with jQuery (proper scoping if needed)

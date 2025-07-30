@@ -17,25 +17,58 @@
                 color: white;
                 font-size: 2em;
             }
+            /* Remove the old o_matrix_scroll_container as we're restructuring */
+            /* .o_matrix_scroll_container {
+                position: relative;
+                max-height: 70vh;
+                overflow: auto;
+                display: block;
+                width: 100%;
+            } */
+            
+            .o_matrix_fixed_header {
+                /* position: sticky is the key for the header to stay fixed */
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: white; /* Ensure the header background is solid so content doesn't show through */
+            }
+            
+            .o_matrix_scroll_body {
+                /* This class will now be applied to a div that wraps the tbody */
+                overflow-y: auto;
+                max-height: calc(70vh - var(--header-height)); /* Dynamically adjust based on header height */
+                /* Consider adding a horizontal scroll if your table is wider than the container */
+                overflow-x: auto;
+            }
+            
+            .o_matrix .table-responsive {
+                overflow: visible; /* We want overflow on the body, not the whole table-responsive */
+            }
+
+            /* Add some styling for the sticky header if needed */
+            .o_list_table th {
+                white-space: nowrap; /* Prevents header text from wrapping */
+            }
         </style>
 
         <div id="ui-blocker">Loading...</div>
-
+        <div class="d-flex justify-content-center" style="width:100%!important;">
         <div t-if="model.hasData() and model.metaData.activeMeasures.length" 
-            class="o_matrix mx-3 table-responsive" t-ref="root">
-            <table class="table table-sm table-bordered" t-ref="table">
+            class="o_matrix mx-3 table-responsive o_list_view rounded-3" t-ref="root">
+            <table class="o_list_table table table-sm table-hover table-striped rounded-top" t-ref="table" style="width:100%!important;">
                 <!-- Column Group Headers -->
+                <t t-set="visibleRightRowGroupBys" 
+                    t-value="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right')"/>
+                
                 <thead>
                     <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
                         <!-- Empty cells for row fields -->
                         <t t-if="headerRow_index == 0">
                             <th t-att-colspan="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='left').length" 
                                 t-att-rowspan="table.headers.length" 
-                                class="">
-                                <t t-if="state.isEditing">
-                                    <!--<button class="btn-link">Add a line</button>-->
-                                    <a href="#" role="button" tabindex="0" class="add_line" t-on-click="() => this.onAddLineClicked(table.rows[0],model)">Add a line</a>
-                                </t>
+                                style="border-right: 0.5px solid #f1f4f7;border-left:0.5px solid #f1f4f7;">
+                                
                             </th>
 
                         </t>
@@ -44,8 +77,10 @@
                         
                         
                         <!-- Column group headers -->
+                        <t t-set="last_cell" t-value="None"/>
+                        <t t-set="last_cell_index" t-value="0"/>
                         <t t-foreach="headerRow" t-as="cell" t-key="'header_row_' + cell_index">
-                            <th t-att-colspan="cell.width" t-attf-style="'min-width:200px;'"
+                            <th t-att-colspan="cell.width" t-attf-style="'min-width:100px;min-height:20px!important;'"
                                 t-att-rowspan="cell.height"
                                 class="text-center"
                                 t-att-class="{
@@ -55,50 +90,46 @@
                                 t-att-name="cell.name" t-att-type="cell.type"
                                 t-att-index="cell_index" t-att-id="cell.fieldId||cell.title">
                                 <span t-esc="cell.title"/>
-                                <t t-if="cell_index==headerRow.length-1 and headerRow_index==1">
-                                    <t t-if="state.isEditing">
-                                        <i class="fa fa-plus-square me-1" data-tooltip="Add a column" title="" 
-                                            style="margin-left:20px!important;" t-on-click="() => this.onAddColumnClicked(cell,cell_index,model)"/>
-                                    </t>
-                                </t>
+                                
                             </th>
+                            <t t-if="cell_index==headerRow.length-1">
+                                <t t-if="headerRow_index==1">
+                                    <t t-set="last_cell" t-value="cell"/>
+                                    <t t-set="last_cell_index" t-value="cell_index"/>
+                                </t>
+                                <th class="row_bordered">
+                                </th>                                
+                            </t>
                             <t t-if="cell_index==headerRow.length-1 and model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right').length>0">
                                 <th t-att-colspan="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right').length" 
-                                    class="">
+                                    style="border-right: 0.5px solid #f1f4f7;border-left:0.5px solid #f1f4f7;">
                                 </th>
                             </t>
+                            
+                            
                         </t>
-                        <!--<th t-foreach="getDynamicColumns()" t-as="colKey" class="text-center" t-key="'dynamic_col_' + colKey">
-                            <t t-set="col" t-value="model.data.dynamicColumns?.get(colKey)"/>
-                            <t t-if="col">
-                                <div class="o_column_header" t-on-click="() => onHeaderClick(colKey)">
-                                    <span t-esc="col.selectedValue ? col.selectedValue.display_name : col.fieldInfo?.string"/>
-                                    <i class="fa fa-caret-down ml-1"/>
-                                </div>
-                            </t>
-                        </th>-->
+                        
                     </tr>
-                    
                     <!-- Row Field Headers -->
                     <tr>
-                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
+                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowFieldIndex">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="model.metaData.fieldAttrs[fieldName].direction === 'left'">
                                 <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
-                                    <th class="text-center position-relative" style="min-width:100px;">
-                                        <span t-esc="model.metaData.fields[fieldName].string"/>
-                                        <span class="o_resize position-absolute top-0 end-0 h-100"
-                                                style="width: 4px; cursor: col-resize; z-index: 1;"
-                                                t-on-pointerdown.stop.prevent="onStartResize"/>
-                                    </th>
+                                    
+                                        <th class="text-center position-relative row_bordered" style="min-width:100px;min-height:20px!important;">
+                                            <span t-esc="model.metaData.fields[fieldName].string"/>
+                                            <span class="o_resize position-absolute top-0 end-0 h-100"
+                                                    style="width: 4px; cursor: col-resize; z-index: 1;"
+                                                    t-on-pointerdown.stop.prevent="onStartResize"/>
+                                        </th>
                                 </t>
                             </t>
                         </t>
-                        
                         <!-- Measure headers for each column group -->
                         <t t-foreach="table.headers[table.headers.length - 1]" t-as="colGroup" t-key="'measure_' + colGroup_index">
                             <t t-foreach="model.metaData.activeMeasures" t-as="measure" t-key="measure">
-                                <th class="text-center position-relative" style="min-width:100px;">
+                                <th class="text-center position-relative row_bordered" style="min-width:100px;min-height:20px!important;">
                                     <span t-esc="model.metaData.measures[measure].string"/>
                                     <span class="o_resize position-absolute top-0 end-0 h-100"
                                             style="width: 4px; cursor: col-resize; z-index: 1;"
@@ -107,11 +138,27 @@
                                 </th>
                             </t>
                         </t>
+                        
+                        <t t-if="state.isEditing">
+                            <th class="row_bordered add_button" style="width:80px!important;font-size:12px!important;">
+                            
+                                <!--<button class="fa fa-plus-square me-1" data-tooltip="Add a column" title="" 
+                                    />-->
+                                <a href="#" role="button" tabindex="0" class="add_line" t-on-click="() => this.onAddColumnClicked(last_cell,last_cell_index,model)"><span style="font-size:15px!important;font-weight:bold;">+</span> ADD A COLUMN</a>
+                            </th>
+                        </t>
+                        <t t-else="">
+                            <th class="row_bordered">
+                            </th>
+                        </t>
+                            
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="model.metaData.fieldAttrs[fieldName].direction === 'right'">
                                 <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
-                                    <th class="text-center position-relative direction-right" style="min-width:130px;">
+                                    <t t-set="isLast" t-value="visibleRightRowGroupBys.indexOf(rowField) === visibleRightRowGroupBys.length - 1"/>
+                                    <th class="text-center position-relative direction-right row_bordered" 
+                                        style="min-width:130px;" t-att-class="{'matrix-right-last': isLast}">
                                         <span t-esc="model.metaData.fields[fieldName].string"/>
                                         <span class="o_resize position-absolute top-0 end-0 h-100"
                                                 style="width: 4px; cursor: col-resize; z-index: 1;"
@@ -121,12 +168,21 @@
                             </t>
                         </t>
                     </tr>
+                    <tr class="add_button">
+                        <th t-att-colspan="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible).length+table.headers.length+1" 
+                                t-att-rowspan="1" 
+                                class="o_list_button_add" style="background-color:white!important;">
+                            <t t-if="state.isEditing">
+                                <a href="#" role="button" tabindex="0" class="add_line" t-on-click="() => this.onAddLineClicked(table.rows[0],model)"><span style="font-size:16px!important;font-weight:bold;">+</span> Add a line</a>
+                            </t>
+                        </th>
+                    </tr>
                 </thead>
                 
                 <!-- Data Rows -->
                 <tbody>
                     <tr t-foreach="table.rows" t-as="row" t-key="'row_' + row_index"
-                        t-att-class="{'o_matrix_new_row': row.isNew}"   >
+                        t-att-class="{'o_matrix_new_row': row.isNew}" t-on-click="(ev) => this.onRowClicked(ev,row_index,row)" style="cursor:pointer;">
                         <!-- Row fields as separate columns -->
                         <!--<t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
@@ -145,14 +201,16 @@
                         <t t-set="record_line_id" t-value="row_index"/>
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
+                            <t t-set="isFirst" t-value="model.metaData.rowGroupBys.indexOf(rowField)==0"/>
                             <t t-if="model.metaData.fieldAttrs[fieldName].direction === 'left'">
                                 
                                 <t t-set="isReadonly" t-value="model.metaData.fieldAttrs[fieldName].isReadonly"/>
                                 <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
                                     <t t-if="state.isEditing and getFieldType(fieldName) === 'many2one'">
-                                        <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one" 
+                                        <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one row_bordered" 
                                             data-tooltip-delay="1000" tabindex="-1" t-att-name="fieldName" 
-                                            t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:100px;">
+                                            t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:100px;"
+                                            t-att-class="{'matrix-left-first':isFirst}">
                                             <div t-att-name="fieldName" class="o_field_widget o_field_many2one">
                                                 <div class="o_field_many2one_selection">
                                                     <div class="o_input_dropdown" t-on-click="(ev) => this.displayMany2oneRecord(ev,fieldName,row_index,row)"
@@ -165,7 +223,7 @@
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
                                                                         t-att-data-value="row.data[fieldName]?.value ||''" 
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
                                                                         disabled="disabled"
                                                                     />
                                                                 </t>
@@ -175,7 +233,7 @@
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
                                                                         t-att-data-value="row.data[fieldName]?.value ||''" 
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;"
                                                                     />
                                                                 </t>
                                                             </t>
@@ -185,22 +243,22 @@
                                                                         t-att-name="fieldName"
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
                                                                         disabled="disabled"
                                                                     />
                                                                 </t>
                                                                 <t t-else="">
-                                                                    <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                                    <input type="text" class="o-autocomplete--input o_input edit_mode no_border_input" 
                                                                         t-att-name="fieldName"
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;"
                                                                     />
                                                                 </t>
                                                             </t>
                                                         </div>
                                                         <t t-if="!isReadonly">
-                                                            <span class="o_dropdown_button" style="top:13px!important;"></span>
+                                                            <span class="o_dropdown_button dropdown_button_hidden"></span>
                                                         </t>
                                                     </div>
                                                     <!--<button type="button" class="btn btn-link text-action oi o_external_button oi-arrow-right" 
@@ -212,7 +270,7 @@
                                         </td>
                                     </t>
                                     <t t-else="else">
-                                        <td class="text-left" style="min-width:100px;">
+                                        <td class="text-left row_bordered" style="min-width:100px;" t-att-class="{'matrix-left-first':isFirst}">
                                             <t t-if="state.isEditing">
                                                 <!-- Editable row group fields -->
                                                 <t t-if="getFieldType(fieldName) === 'date' || getFieldType(fieldName) === 'datetime' || model.metaData.widgets[fieldName] === 'date'">
@@ -247,7 +305,7 @@
                                                             <input type="date" t-att-name="fieldName"
                                                                 t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                                 t-on-change="(ev) => this.onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                                class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                                class="form-control edit_mode o_field_date no_border_input" t-att-id="fieldName+'_'+record_line_id"
                                                             />
                                                         </t>
                                                     </t>
@@ -308,7 +366,7 @@
                                                             <input type="text" t-att-name="fieldName"
                                                                 t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
                                                                 t-on-change="(ev) => this.onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                                class="form-control edit_mode"/>
+                                                                class="form-control edit_mode no_border_input"/>
                                                         </t>
                                                     </t>
                                                 </t>
@@ -327,7 +385,7 @@
                         
                         <t t-foreach="row.subGroupMeasurements" t-as="cell" t-key="'row_cell_' + cell_index">
                             <t t-set="isReadonlyMeasure" t-value="model.metaData.fieldAttrs[cell.measure].isReadOnly"/>
-                            <td class="text-end" style="min-width:100px;"
+                            <td class="text-center row_bordered" style="min-width:100px;"
                                 t-att-class="{
                                     'cursor-pointer': cell.value !== undefined,
                                     'font-weight-bold': cell.isBold
@@ -345,7 +403,7 @@
                                                 <input type="number"
                                                 t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                class="form-control edit_mode"/>
+                                                class="form-control edit_mode no_border_input"/>
                                             </t>
                                         </t>
                                         <!--<t t-elif="!cell.id">
@@ -359,7 +417,7 @@
                                                     disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
                                             </t>
                                             <t t-else="">
-                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                <input type="number" class="form-control edit_mode no_border_input" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                     t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
                                             </t>
                                         </t>
@@ -377,7 +435,7 @@
                                                 <input type="text"
                                                 t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                class="form-control edit_mode"/>
+                                                class="form-control edit_mode no_border_input"/>
                                             </t>
                                         </t>
                                         
@@ -388,7 +446,7 @@
                                                 disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
                                             </t>
                                             <t t-else="">
-                                                <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
+                                                <input type="number" class="form-control edit_mode no_border_input" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
                                             </t>
                                             
@@ -400,16 +458,23 @@
                                 </t>
                             </td>
                         </t>
+                        <td class="row_bordered" style="background-color:white!important;text-align:center;vertical-align:middle;">
+                            <t t-if="!row.isNew">
+                                <i class="fa fa-clone me-1 matrix_copy" data-tooltip="Copy" title="" style="color:#2563e7;border:none;"
+                                    t-on-click="(ev) => this.matrixCopy(ev,row_index,row)"/>
+                            </t>
+                        </td>
                         <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="model.metaData.fieldAttrs[fieldName].direction === 'right'">
-                                
+                                <t t-set="isLast" t-value="visibleRightRowGroupBys.indexOf(rowField) === visibleRightRowGroupBys.length - 1"/>
                                 <t t-set="isReadonly" t-value="model.metaData.fieldAttrs[fieldName].isReadonly"/>
                                 <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
                                     <t t-if="state.isEditing and getFieldType(fieldName) === 'many2one'">
-                                        <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one" 
+                                        <td class="text-left o_data_cell cursor-pointer o_field_cell o_list_many2one row_bordered" 
                                             data-tooltip-delay="1000" tabindex="-1" t-att-name="fieldName" 
-                                            t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:130px;">
+                                            t-att-data-tooltip="row.data[fieldName]?.label" title="" style="min-width:130px;"
+                                            t-att-class="{'matrix-right-last': isLast}">
                                             <div t-att-name="fieldName" class="o_field_widget o_field_many2one">
                                                 <div class="o_field_many2one_selection">
                                                     <div class="o_input_dropdown" t-on-click="(ev) => this.displayMany2oneRecord(ev,fieldName,row_index,row)"
@@ -422,7 +487,7 @@
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
                                                                         t-att-data-value="row.data[fieldName]?.value ||''" 
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
                                                                         disabled="disabled"
                                                                     />
                                                                 </t>
@@ -432,7 +497,7 @@
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
                                                                         t-att-data-value="row.data[fieldName]?.value ||''" 
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;"
                                                                     />
                                                                 </t>
                                                             </t>
@@ -442,22 +507,22 @@
                                                                         t-att-name="fieldName"
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;background-color:#f8f9fa!important;border:none!important;"
                                                                         disabled="disabled"
                                                                     />
                                                                 </t>
                                                                 <t t-else="">
-                                                                    <input type="text" class="o-autocomplete--input o_input edit_mode" 
+                                                                    <input type="text" class="o-autocomplete--input o_input edit_mode no_border_input" 
                                                                         t-att-name="fieldName"
                                                                         autocomplete="off" placeholder="" t-att-id="fieldName+'_'+record_line_id"
                                                                         t-att-value="row.data[fieldName]?.label || ''"
-                                                                        style="margin-top:3px!important;height: 30px!important;min-width:190px!important;"
+                                                                        style="margin-top:-3px!important;height: 30px!important;min-width:190px!important;"
                                                                     />
                                                                 </t>
                                                             </t>
                                                         </div>
                                                         <t t-if="!isReadonly">
-                                                            <span class="o_dropdown_button" style="top:13px!important;"></span>
+                                                            <span class="o_dropdown_button dropdown_button_hidden"></span>
                                                         </t>
                                                     </div>
                                                     <!--<button type="button" class="btn btn-link text-action oi o_external_button oi-arrow-right" 
@@ -469,7 +534,7 @@
                                         </td>
                                     </t>
                                     <t t-else="else">
-                                        <td class="text-left" style="min-width:100px;">
+                                        <td class="text-left row_bordered" style="min-width:100px;" t-att-class="{'matrix-right-last': isLast}">
                                             <t t-if="state.isEditing">
                                                 <!-- Editable row group fields -->
                                                 <t t-if="getFieldType(fieldName) === 'date' || getFieldType(fieldName) === 'datetime' || model.metaData.widgets[fieldName] === 'date'">
@@ -504,7 +569,7 @@
                                                             <input type="date" t-att-name="fieldName"
                                                                 t-att-value="formatDate(row.data[fieldName]?.value,model.metaData.widgets[fieldName] === 'date'?'date':getFieldType(fieldName))" 
                                                                 t-on-change="(ev) => this.onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                                class="form-control edit_mode o_field_date" t-att-id="fieldName+'_'+record_line_id"
+                                                                class="form-control edit_mode o_field_date no_border_input" t-att-id="fieldName+'_'+record_line_id"
                                                             />
                                                         </t>
                                                     </t>
@@ -523,7 +588,7 @@
                                                         </select>
                                                     </t>
                                                     <t t-else="">
-                                                        <select class="form-select edit_mode o_list_selection" t-att-name="fieldName"
+                                                        <select class="form-select edit_mode o_list_selection no_border_input" t-att-name="fieldName"
                                                                 t-on-change="(ev) => this.onFieldEdit(fieldName+'_'+record_line_id,row)" t-att-id="fieldName+'_'+record_line_id">
                                                             <t t-foreach="getSelectionOptions(fieldName)" t-as="option" t-key="option.id">
                                                                 <option t-att-value="option[0]"
@@ -565,7 +630,7 @@
                                                             <input type="text" t-att-name="fieldName"
                                                                 t-att-value="row.data[fieldName]?.value" t-att-id="fieldName+'_'+record_line_id"
                                                                 t-on-change="(ev) => this.onFieldEdit(fieldName+'_'+record_line_id,row)"
-                                                                class="form-control edit_mode"/>
+                                                                class="form-control edit_mode no_border_input"/>
                                                         </t>
                                                     </t>
                                                 </t>
@@ -584,54 +649,8 @@
                 </tbody>
             </table>
         </div>
+        </div>
     </t>
 
-    <t t-name="matrix_view.MatrixHeader">
-        <th
-            class="bg-view text-nowrap cursor-pointer fw-normal user-select-none"
-            t-att-colspan="isXAxis ? cell.width : undefined"
-            t-att-rowspan="isXAxis ? cell.height : undefined"
-            t-att-class="{
-                o_matrix_header_cell_closed: cell.isLeaf,
-                o_matrix_header_cell_opened: !cell.isLeaf,
-                'border-top': isInHead,                
-            }"
-            t-attf-style="{{
-                isXAxis
-                    ? undefined
-                    : l10n.direction === 'ltr'
-                        ? 'padding-left: ' + getPadding(cell) + 'px;'
-                        : 'padding-right: ' + getPadding(cell) + 'px;'
-            }}"
-            t-att-data-tooltip="cell.label"
-            t-attf-data-tooltip-position="{{ l10n.direction === 'ltr' ? 'right' : 'left' }}"
-            t-on-click.prevent="() => this.onHeaderClick(cell, isXAxis ? 'col' : 'row')"
-        >
-            <t t-if="cell.isLeaf and !cell.isFolded">
-                <MatrixGroupByMenu
-                    toggler="'parent'"
-                    position="isXAxis ? 'bottom-start' : 'bottom-end'"
-                    cell="cell"
-                    customGroupBys="model.metaData.customGroupBys"
-                    onItemSelected="(payload) => this.onGroupBySelected(isXAxis ? 'col' : 'row', payload)"
-                    onAddCustomGroupBy="fieldName => this.onAddCustomGroupBy(isXAxis ? 'col' : 'row', cell.groupId, fieldName)"
-                />
-            </t>
-            <!--<i t-attf-class="fa fa-{{ cell.isLeaf ? 'plus-square' : 'minus-square-o' }} me-1"/>-->
-            <span t-esc="cell.title"/>
-        </th>
-    </t>
-
-    <t t-name="matrix_view.MatrixMeasure">
-        <th class="bg-view text-muted text-center text-nowrap fw-normal" t-att-colspan="cell.width" t-att-rowspan="cell.height" t-att-class="{
-                'o_matrix_origin_row cursor-pointer user-select-none': cell.originIndexes,
-                'o_matrix_measure_row cursor-pointer user-select-none': !cell.originIndexes,
-                o_matrix_sort_order_asc: cell.order === 'asc',
-                o_matrix_sort_order_desc: cell.order === 'desc',
-            }" t-on-click.prevent="() => this.onMeasureClick(cell)" t-on-mouseover="onMouseEnter" t-on-mouseout="onMouseLeave">
-            <t t-esc="cell.title"/>
-            <i t-if="cell.order === 'asc' || cell.order ==='desc'" t-attf-class="fa fa-caret-{{ cell.order === 'asc' ? 'up' : 'down' }} ms-1"/>
-        </th>
-    </t>
 
 </templates>
