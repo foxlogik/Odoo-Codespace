@@ -112,7 +112,7 @@
                     </tr>
                     <!-- Row Field Headers -->
                     <tr>
-                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowFieldIndex">
+                        <t t-foreach="model.metaData.rowGroupBys" t-as="rowField" t-key="rowField">
                             <t t-set="fieldName" t-value="rowField.split(':')[0]"/>
                             <t t-if="model.metaData.fieldAttrs[fieldName].direction === 'left'">
                                 <t t-if="!model.metaData.fieldAttrs[fieldName] || !model.metaData.fieldAttrs[fieldName].isInvisible">
