@@ -54,6 +54,13 @@ class AnalyticLine(models.Model):
         store=False,
     )
 
+    product_category_id = fields.Many2one(
+        'product.category',
+        string='Product Category',
+        related='product_id.categ_id',
+        store=True,)
+
+
     @api.depends('partner_id', 'company_id')
     def _compute_account_domain(self):
         for rec in self:
@@ -134,6 +141,7 @@ class MailThread(models.AbstractModel):
         if hasattr(self, 'id'):
             return 'id'
         return self._order or 'id'
+
 class MoveLine(models.Model):
     _inherit = "account.move.line"
     

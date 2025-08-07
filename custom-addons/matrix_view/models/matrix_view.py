@@ -1,4 +1,9 @@
 from odoo import models, fields, api
+from odoo.tools import SQL, unique
+from odoo.tools.float_utils import float_round, float_compare
+from odoo.tools.misc import flatten
+from odoo.exceptions import UserError, ValidationError
+import json
 
 class IrUIView(models.Model):
     _inherit = 'ir.ui.view'
@@ -84,3 +89,10 @@ class MatrixViewMixin(models.AbstractModel):
 
     def _get_record_label(self, record, fields):
         return ' / '.join(str(record[f]) for f in fields)
+
+class Base(models.AbstractModel):
+    _inherit = 'base'
+
+    @api.model
+    def create_with_computed(self, vals):
+        return self.create(vals).id

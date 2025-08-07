@@ -62,6 +62,9 @@
                     t-value="model.metaData.rowGroupBys.filter((rowGroup) => !model.metaData.fieldAttrs[rowGroup.split(':')[0]].isInvisible and model.metaData.fieldAttrs[rowGroup.split(':')[0]].direction=='right')"/>
                 
                 <thead>
+                    
+                    <t t-set="last_cell" t-value="None"/>
+                    <t t-set="last_cell_index" t-value="0"/>
                     <tr t-foreach="table.headers" t-as="headerRow" t-key="'header_' + headerRow_index">
                         <!-- Empty cells for row fields -->
                         <t t-if="headerRow_index == 0">
@@ -77,8 +80,6 @@
                         
                         
                         <!-- Column group headers -->
-                        <t t-set="last_cell" t-value="None"/>
-                        <t t-set="last_cell_index" t-value="0"/>
                         <t t-foreach="headerRow" t-as="cell" t-key="'header_row_' + cell_index">
                             <th t-att-colspan="cell.width" t-attf-style="'min-width:100px;min-height:20px!important;'"
                                 t-att-rowspan="cell.height"

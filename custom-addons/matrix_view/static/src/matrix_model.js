@@ -230,7 +230,7 @@ export class MatrixModel extends Model {
         const month = MONTHS[parts[1]];
         const year = parseInt(parts[2], 10);
         const formattedDate = new Date(Date.UTC(year, month, day));
-        console.log(`Parsed date value: ${formattedDate}`);
+        //console.log(`Parsed date value: ${formattedDate}`);
         const pad = (n) => String(n).padStart(2, '0');
         if (fieldType === 'datetime') {
             //return formattedDate.toISOString().slice(0, 19).replace('T', ' ');
@@ -907,7 +907,7 @@ export class MatrixModel extends Model {
     _getGroupLabels(group, groupBys, config) {
         return groupBys.map((gb) => {
             const groupBy = this._normalize(gb);
-            console.log(`Sanitizing label for groupBy: ${groupBy}, value: ${group[groupBy]} in group:`, group, config);
+            //console.log(`Sanitizing label for groupBy: ${groupBy}, value: ${group[groupBy]} in group:`, group, config);
             return this._sanitizeLabel(group[groupBy], groupBy, config);
         });
     }
@@ -1269,9 +1269,9 @@ export class MatrixModel extends Model {
         
         const flattenTree = (node, currentRow = {}) => {
             const group = node.root;
-            console.log("Flattening node:", group);
-            console.log("Row group values:", group.values);
-            console.log("Current row before adding group values:", currentRow);
+            //console.log("Flattening node:", group);
+            //console.log("Row group values:", group.values);
+            //console.log("Current row before adding group values:", currentRow);
             // Add current level's data to the row
             if (group.values.length > 0) {
                 const fieldName = rowGroupBys[group.values.length - 1].split(':')[0];
@@ -1280,8 +1280,8 @@ export class MatrixModel extends Model {
                     label: group.labels[group.labels.length - 1]
                 };
             }
-            console.log("Current row after adding group values:", currentRow);
-            console.log("Node directSubTrees:", node.directSubTrees);
+            //console.log("Current row after adding group values:", currentRow);
+            //console.log("Node directSubTrees:", node.directSubTrees);
             if (node.directSubTrees.size === 0) {
                 // Leaf node: create a row
                 const row = {
@@ -1320,11 +1320,11 @@ export class MatrixModel extends Model {
             } else {
                 // Continue traversing the tree
                 const keys = node.sortedKeys || [...node.directSubTrees.keys()];
-                console.log("Traversing keys:", keys);
+                //console.log("Traversing keys:", keys);
                 keys.forEach(key => {
-                    console.log("Processing key:", key);
+                    //console.log("Processing key:", key);
                     const subTree = node.directSubTrees.get(key);
-                    console.log("Subtree:", subTree);
+                    //console.log("Subtree:", subTree);
                     flattenTree(subTree, {...currentRow});
                 });
             }
@@ -1546,10 +1546,10 @@ export class MatrixModel extends Model {
         if (metaData.sortedColumn) {
             this._sortRows(metaData.sortedColumn, config);
         }
-        console.log("data",config.data);
+        //console.log("data",config.data);
         if (config.data && config.data.colGroupTree) {
             await this._sortColumnTree(config.data.colGroupTree, config);
-            console.log("data",config.data);
+            //console.log("data",config.data);
             //config.data.colGroupTree.sortedKeys = sortedKeys;
         }
         //await this._sortColumnTree(data.colGroupTree, metaData.colGroupBys, config);
@@ -1677,7 +1677,7 @@ export class MatrixModel extends Model {
     async _subdivideGroup(group, divisors, config) {
         const { data, metaData } = config;
         const key = JSON.stringify([group.rowValues, group.colValues]);
-        console.log("subdivideGroup", key, group.rowValues, group.colValues, divisors);
+        //console.log("subdivideGroup", key, group.rowValues, group.colValues, divisors);
         const proms = metaData.origins.reduce((acc, origin, originIndex) => {
             // if no information on group content is available, we fetch data.
             // if group is known to be empty for the given origin,
@@ -1767,7 +1767,7 @@ export class MatrixModel extends Model {
 
     async _sortIdsByModelOrder(ids, model,order) {
         if (!ids.length) return ids;
-        console.log("Sorting IDs by model order:", ids, model);
+        //console.log("Sorting IDs by model order:", ids, model);
         try {
             // Use fixed order instead of dynamic lookup
             const sortedIds= await this.orm.searchRead(
@@ -1776,7 +1776,7 @@ export class MatrixModel extends Model {
                 ['id'],
                 { order: order?order:await this._getModelOrder(model) }
             ).then(records => records.map(record => record.id));
-            console.log("Sorted IDs:", sortedIds);  
+            //console.log("Sorted IDs:", sortedIds);  
             return sortedIds
         } catch (e) {
             console.error("Sorting failed, using natural order", e);
