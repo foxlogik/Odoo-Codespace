@@ -398,13 +398,13 @@
                                                 <input type="number"
                                                     t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                     t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                    class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;text-align:center;"/>
                                             </t>
                                             <t t-else="">
                                                 <input type="number"
                                                 t-att-value="cell.value || 0" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                class="form-control edit_mode no_border_input"/>
+                                                class="form-control edit_mode no_border_input" style="text-align:center;"/>
                                             </t>
                                         </t>
                                         <!--<t t-elif="!cell.id">
@@ -415,11 +415,11 @@
                                             <t t-if="isReadonlyMeasure">
                                                 <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                     t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                    disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                    disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;text-align:center;"/>
                                             </t>
                                             <t t-else="">
                                                 <input type="number" class="form-control edit_mode no_border_input" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                    t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
+                                                    t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)" style="text-align:center;"/>
                                             </t>
                                         </t>
 
@@ -430,13 +430,13 @@
                                                 <input type="text"
                                                 t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                class="form-control edit_mode" disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;text-align:center;"/>
                                             </t>
                                             <t t-else="">
                                                 <input type="text"
                                                 t-att-value="cell.value || ''" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                class="form-control edit_mode no_border_input"/>
+                                                class="form-control edit_mode no_border_input" style="text-align:center;"/>
                                             </t>
                                         </t>
                                         
@@ -444,18 +444,18 @@
                                             <t t-if="isReadonlyMeasure">
                                                 <input type="number" class="form-control edit_mode" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
                                                 t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"
-                                                disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;"/>
+                                                disabled="disabled" style="background-color:#f8f9fa!important;border:none!important;text-align:center;"/>
                                             </t>
                                             <t t-else="">
                                                 <input type="number" class="form-control edit_mode no_border_input" t-att-id="cell.measure+'_'+row_index+'_'+cell_index"
-                                                t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)"/>
+                                                t-on-change="(ev) => this.onFieldEdit(cell.measure+'_'+row_index+'_'+cell_index,row,cell)" style="text-align:center;"/>
                                             </t>
                                             
                                         </t>
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <t t-esc="cell.value || '-'"/>
+                                    <span t-esc="cell.value || '-'" style="text-align:center;"/>
                                 </t>
                             </td>
                         </t>

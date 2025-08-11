@@ -1598,7 +1598,7 @@ export class MatrixRenderer extends Component {
                     context: actionContext,
                     domain: actionDomain,
                 }, {
-                    clearBreadcrumbs: true,  // Optional: cleans navigation history
+                    //clearBreadcrumbs: true,  // Optional: cleans navigation history
                     replaceCurrentAction: true  // Replaces current view instead of adding to stack
                 });
                 
